@@ -104,7 +104,7 @@
     };
 
     const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
-    const REVEAL_AT = 2300, REVEAL_MS = 3600;
+    const REVEAL_AT = 50, REVEAL_MS = 1700;
 
     function frame(now) {
       const dt = Math.min(0.05, (now - last) / 1000 || 0.016); last = now;
@@ -112,8 +112,8 @@
       ctx.clearRect(0, 0, W, H);
 
       // smoke grows thicker as the name starts to form
-      density = 1 + Math.min(1, Math.max(0, (t - 600) / 1800)) * 1.6;
-      spawnAcc += dt * 38 * density;
+      density = 1 + Math.min(1, Math.max(0, (t - 50) / 1200)) * 1.6;
+      spawnAcc += dt * 70 * density;
       while (spawnAcc >= 1 && puffs.length < 260) { spawn(now); spawnAcc -= 1; }
       if (spawnAcc > 3) spawnAcc = 0;
 
@@ -150,7 +150,7 @@
             title.style.maskImage = title.style.webkitMaskImage = 'none';
             title.style.transform = 'none';
             el.classList.add('is-named');
-            timers.push(setTimeout(() => exit(false), 1700));
+            timers.push(setTimeout(() => exit(false), 400));
           }
         }
       }
@@ -169,9 +169,9 @@
         window.removeEventListener('resize', onResize);
         el.remove();
       };
-      if (fast) setTimeout(remove, 500);
+      if (fast) setTimeout(remove, 300);
       else el.addEventListener('transitionend', (e) => { if (e.target === el) remove(); });
-      setTimeout(remove, 1700);
+      setTimeout(remove, 450);
     }
 
     // Serve the bowl, then start the smoke once fonts are ready
@@ -180,7 +180,7 @@
       document.fonts.load('900 100px "Big Shoulders Display"'),
     ]).catch(() => {});
     requestAnimationFrame(() => el.classList.add('is-served'));
-    Promise.all([fontsReady, new Promise((r) => timers.push(setTimeout(r, 900)))]).then(() => {
+    Promise.all([Promise.race([fontsReady, new Promise((r) => setTimeout(r, 200))]), new Promise((r) => timers.push(setTimeout(r, 150)))]).then(() => {
       if (exiting) return;
       layoutTitle(); rect();
       title.style.filter = 'url(#intro-smoke)';

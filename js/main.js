@@ -2,18 +2,23 @@
   document.documentElement.classList.add('js');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Mobile nav
+  // Bubble side bar
   const toggle = document.getElementById('navToggle');
   const links = document.getElementById('navLinks');
+  const scrim = document.getElementById('navScrim');
   const setNav = (open) => {
     links.classList.toggle('is-open', open);
+    scrim.classList.toggle('is-open', open);
+    document.body.classList.toggle('nav-open', open);
     toggle.setAttribute('aria-expanded', String(open));
     toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
     toggle.querySelector('use').setAttribute('href', open ? '#i-x' : '#i-list');
+    if (open) links.querySelector('a').focus({ preventScroll: true });
   };
   toggle.addEventListener('click', () => setNav(!links.classList.contains('is-open')));
+  scrim.addEventListener('click', () => setNav(false));
   links.addEventListener('click', (e) => { if (e.target.closest('a')) setNav(false); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setNav(false); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && links.classList.contains('is-open')) { setNav(false); toggle.focus(); } });
 
   // Scroll reveals
   const io = new IntersectionObserver((entries) => {
@@ -44,6 +49,41 @@
     });
   });
 
+  // "See more": long category lists show the first few dishes, the button reveals the rest
+  const SHOW = 4;
+  document.querySelectorAll('.dishes').forEach((ul) => {
+    const dishes = [...ul.querySelectorAll('.dish')];
+    if (dishes.length <= SHOW + 1) return;
+    const extra = dishes.slice(SHOW);
+    extra.forEach((d) => d.classList.add('is-extra'));
+    ul.classList.add('is-collapsed');
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'more';
+    btn.setAttribute('aria-controls', ul.id); btn.setAttribute('aria-expanded', 'false');
+    const label = (open) => {
+      btn.innerHTML = open
+        ? '<span>See less</span><svg class="icon" aria-hidden="true"><use href="#i-caret"/></svg>'
+        : `<span>See more</span><span class="more__count">${extra.length} more</span><svg class="icon" aria-hidden="true"><use href="#i-caret"/></svg>`;
+    };
+    label(false);
+    btn.addEventListener('click', () => {
+      const open = ul.classList.contains('is-collapsed');
+      ul.classList.toggle('is-collapsed', !open);
+      btn.setAttribute('aria-expanded', String(open));
+      label(open);
+      if (open) {
+        extra.forEach((d, k) => { d.style.setProperty('--k', Math.min(k, 8)); d.classList.remove('is-fresh'); void d.offsetWidth; d.classList.add('is-fresh'); });
+        extra[0].querySelector('a, h3').scrollIntoView?.({ block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
+      } else {
+        ul.closest('.menu').scrollIntoView({ block: 'start', behavior: reduceMotion ? 'auto' : 'smooth' });
+      }
+    });
+    ul.after(btn);
+    // the button belongs to its tab: hide it with the list
+    new MutationObserver(() => { btn.hidden = ul.hidden; }).observe(ul, { attributes: true, attributeFilter: ['hidden'] });
+    btn.hidden = ul.hidden;
+  });
+
   // Feature plate follows the dish being looked at
   const plate = document.querySelector('.menu__plate');
   const plateImg = plate.querySelector('img');
@@ -72,6 +112,34 @@
     d.addEventListener('focusin', () => feature(d));
   });
   current = document.querySelector('#tab-ramen .dish');
+
+  // Book a seat: opens WhatsApp when data-whatsapp holds a number (digits with country code), otherwise shows a confirmation
+  const bookForm = document.getElementById('bookForm');
+  if (bookForm) {
+    const bookDone = document.getElementById('bookDone');
+    const bookHint = document.getElementById('bookHint');
+    const dateEl = document.getElementById('bookDate');
+    const today = new Date(); today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+    dateEl.min = today.toISOString().slice(0, 10);
+    bookForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const f = bookForm.elements;
+      let ok = true;
+      [f.name, f.phone, f.date, f.time].forEach((el) => {
+        const bad = !el.value.trim() || (el === f.phone && el.value.replace(/\D/g, '').length < 8);
+        el.setAttribute('aria-invalid', String(bad)); if (bad) ok = false;
+      });
+      bookHint.classList.toggle('is-error', !ok);
+      if (!ok) { bookHint.textContent = 'Please fill in your name, a phone number, a date and a time.'; bookForm.querySelector('[aria-invalid="true"]').focus(); return; }
+      const day = new Date(f.date.value + 'T00:00').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+      const summary = `${f.name.value.trim()}, ${f.guests.value} ${f.guests.value === '1' ? 'guest' : 'guests'}, ${day} at ${f.time.value}`;
+      const wa = bookForm.dataset.whatsapp.replace(/\D/g, '');
+      if (wa) window.open(`https://wa.me/${wa}?text=${encodeURIComponent(`Table request: ${summary}. Phone: ${f.phone.value.trim()}`)}`, '_blank', 'noopener');
+      document.getElementById('bookSummary').textContent = summary;
+      bookForm.hidden = true; bookDone.hidden = false;
+    });
+    document.getElementById('bookAgain').addEventListener('click', () => { bookForm.reset(); bookHint.textContent = 'We will confirm by phone.'; bookDone.hidden = true; bookForm.hidden = false; });
+  }
 
   // Note wall (kept in this browser only)
   const KEY = 'tokus-notes';
