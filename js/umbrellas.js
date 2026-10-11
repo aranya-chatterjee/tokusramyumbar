@@ -10,6 +10,7 @@
     return n;
   };
 
+  const lite = window.matchMedia('(max-width: 820px), (pointer: coarse)').matches || (navigator.hardwareConcurrency || 8) <= 4;
   function build(cls, dir, hueA, hueB) {
     const wrap = document.createElement('div');
     wrap.className = `umb ${cls}`;
@@ -40,7 +41,7 @@
     const clip = el('clipPath', { id: `disc-${cls}` }, defs);
     el('circle', { cx: C, cy: C, r: 196 }, clip);
     const grain = el('g', { 'clip-path': `url(#disc-${cls})` }, svg);
-    el('rect', { x: 0, y: 0, width: 400, height: 400, fill: '#000', filter: `url(#grain-${cls})`, opacity: 0.5 }, grain);
+    if (!lite) el('rect', { x: 0, y: 0, width: 400, height: 400, fill: '#000', filter: `url(#grain-${cls})`, opacity: 0.5 }, grain);
     // cream bands, like the painted rings on a real wagasa
     [[168, 9], [120, 5], [74, 3]].forEach(([r, w]) => el('circle', { cx: C, cy: C, r, fill: 'none', stroke: '#fbeee4', 'stroke-width': w, opacity: 0.85 }, svg));
     // binding threads crossing the ribs

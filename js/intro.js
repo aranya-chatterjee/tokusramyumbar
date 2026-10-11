@@ -2,6 +2,8 @@
 (() => {
   const root = document.documentElement;
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // phones and low-core devices get a lighter effect: fewer puffs, 1x canvas, CSS blur instead of the SVG filter chain
+  const lite = window.matchMedia('(max-width: 820px), (pointer: coarse)').matches || (navigator.hardwareConcurrency || 8) <= 4;
 
   const finish = () => {
     root.classList.remove('intro-on');
@@ -67,7 +69,7 @@
 
     let W = 0, H = 0, dpr = 1, ox = 0, oy = 0, ow = 0;
     const size = () => {
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      dpr = lite ? 1 : Math.min(window.devicePixelRatio || 1, 2);
       W = el.clientWidth; H = el.clientHeight;
       canvas.width = W * dpr; canvas.height = H * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -99,7 +101,7 @@
         seed: Math.random() * 100,
         rise: 88 + Math.random() * 60,
         stretch: 1.25 + Math.random() * 0.5,
-        peak: 0.11 + Math.random() * 0.09,
+        peak: (0.11 + Math.random() * 0.09) * (lite ? 1.35 : 1),
       });
     };
 
@@ -113,8 +115,8 @@
 
       // smoke grows thicker as the name starts to form
       density = 1 + Math.min(1, Math.max(0, (t - 50) / 1200)) * 1.6;
-      spawnAcc += dt * 70 * density;
-      while (spawnAcc >= 1 && puffs.length < 260) { spawn(now); spawnAcc -= 1; }
+      spawnAcc += dt * (lite ? 30 : 70) * density;
+      while (spawnAcc >= 1 && puffs.length < (lite ? 80 : 260)) { spawn(now); spawnAcc -= 1; }
       if (spawnAcc > 3) spawnAcc = 0;
 
       puffs = puffs.filter((p) => now - p.born < p.life);
@@ -137,9 +139,13 @@
         const raw = (t - REVEAL_AT) / REVEAL_MS;
         if (raw > 0) {
           const p = Math.min(1, raw), e = ease(p), inv = 1 - e;
-          disp.setAttribute('scale', (85 * Math.pow(inv, 1.5)).toFixed(1));
-          blur.setAttribute('stdDeviation', (16 * inv * inv).toFixed(2));
-          turb.setAttribute('baseFrequency', `${(0.010 + Math.sin(t / 900) * 0.0015).toFixed(4)} ${(0.018 - t * 0.0000014).toFixed(4)}`);
+          if (lite) {
+            title.style.filter = `blur(${(10 * inv * inv).toFixed(1)}px)`;
+          } else {
+            disp.setAttribute('scale', (85 * Math.pow(inv, 1.5)).toFixed(1));
+            blur.setAttribute('stdDeviation', (16 * inv * inv).toFixed(2));
+            turb.setAttribute('baseFrequency', `${(0.010 + Math.sin(t / 900) * 0.0015).toFixed(4)} ${(0.018 - t * 0.0000014).toFixed(4)}`);
+          }
           const m = -30 + e * 160;
           title.style.maskImage = title.style.webkitMaskImage = `linear-gradient(to top, #000 ${m - 35}%, transparent ${m}%)`;
           title.style.opacity = Math.min(1, p * 3);
@@ -183,7 +189,7 @@
     Promise.all([Promise.race([fontsReady, new Promise((r) => setTimeout(r, 200))]), new Promise((r) => timers.push(setTimeout(r, 150)))]).then(() => {
       if (exiting) return;
       layoutTitle(); rect();
-      title.style.filter = 'url(#intro-smoke)';
+      title.style.filter = lite ? 'blur(10px)' : 'url(#intro-smoke)';
       t0 = performance.now(); last = t0;
       raf = requestAnimationFrame(frame);
     });

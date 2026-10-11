@@ -19,6 +19,11 @@
     <symbol id="i-list" viewBox="0 0 256 256"><path fill="currentColor" d="M228,128a12,12,0,0,1-12,12H40a12,12,0,0,1,0-24H216A12,12,0,0,1,228,128ZM40,76H216a12,12,0,0,0,0-24H40a12,12,0,0,0,0,24ZM216,180H40a12,12,0,0,0,0,24H216a12,12,0,0,0,0-24Z"/></symbol>
     <symbol id="i-caret" viewBox="0 0 256 256"><path fill="currentColor" d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"/></symbol>
     <symbol id="i-x" viewBox="0 0 256 256"><path fill="currentColor" d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.490a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.52a12,12,0,0,1,17,17L145,128Z"/></symbol>
+    <!-- simple outline icons for the contact section -->
+    <symbol id="i-phone" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7 8 6 8-6"/></g></symbol>
+    <symbol id="i-insta" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/></g><circle cx="17.2" cy="6.8" r="1.2" fill="currentColor"/></symbol>
+    <symbol id="i-linkedin" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/><path d="M8 10.5V16M8 8v.01M12 16v-5.5M12 13c0-1.7 1-2.5 2.2-2.5S16.5 11.3 16.5 13V16"/></g></symbol>
   </svg>
 
   <a class="skip" href="#main">Skip to content</a>
@@ -40,8 +45,26 @@
     <a class="bubble" href="#inside" style="--i:2"><span>Inside</span></a>
     <a class="bubble" href="#wall" style="--i:3"><span>The wall</span></a>
     <a class="bubble" href="#visit" style="--i:4"><span>Visit</span></a>
-    <a class="bubble bubble--cta" href="#book" style="--i:5"><span>Book your seat</span></a>
+    <a class="bubble" href="#contact" style="--i:5"><span>Contact us</span></a>
+    <a class="bubble bubble--cta" href="#book" style="--i:6"><span>Book your seat</span></a>
   </nav>
+
+  <div class="postits postits--l" aria-hidden="true">
+    <p class="pi pi--y" style="--r:-4deg">Ramen is just a hug that forgot how to be physical.</p>
+    <p class="pi pi--p" style="--r:3deg">Slurping is a love language.</p>
+    <p class="pi pi--g" style="--r:-2deg">Rough day? Noodles don't ask questions.</p>
+    <p class="pi pi--y" style="--r:4deg">I came for the broth, stayed for the noodles, left emotionally changed.</p>
+    <p class="pi pi--p" style="--r:-3deg">Dessert is just a second chance at dinner.</p>
+    <p class="pi pi--g" style="--r:2deg">Eat the noodles. Text them back later.</p>
+  </div>
+  <div class="postits postits--r" aria-hidden="true">
+    <p class="pi pi--p" style="--r:4deg">Ramen is proof that hot water can fix at least one thing in my life.</p>
+    <p class="pi pi--g" style="--r:-3deg">Soft egg, soft heart.</p>
+    <p class="pi pi--y" style="--r:2deg">Carbs are my emotional support.</p>
+    <p class="pi pi--p" style="--r:-4deg">My love language is extra chilli.</p>
+    <p class="pi pi--g" style="--r:3deg">Good things come to those who wait for the broth to cool. Nobody waits.</p>
+    <p class="pi pi--y" style="--r:-2deg">Be the egg in a world of plain noodles.</p>
+  </div>
 
   <main id="main">
     <!-- HERO -->
@@ -359,6 +382,21 @@
         <img src="img/front.jpg" alt="Toku's storefront at night, glowing with neon and full of diners" width="680" height="276" loading="lazy">
       </figure>
     </section>
+
+    <!-- CONTACT -->
+    <section class="contact section" id="contact">
+      <div class="contact__head reveal">
+        <p class="eyebrow">Contact us</p>
+        <h2 class="title"><span class="title__plain">Say</span> <span class="title__brush">hello</span></h2>
+        <p>Questions, parties, collabs or just a noodle opinion. We read everything.</p>
+      </div>
+      <ul class="contact__grid">
+        <li><a class="contact__tile reveal" href="tel:+910000000000"><svg class="icon" aria-hidden="true"><use href="#i-phone"/></svg><span class="contact__label">Phone</span><span class="contact__value">+91 00000 00000</span></a></li>
+        <li><a class="contact__tile reveal" href="mailto:hello@example.com"><svg class="icon" aria-hidden="true"><use href="#i-mail"/></svg><span class="contact__label">Email</span><span class="contact__value">hello@example.com</span></a></li>
+        <li><a class="contact__tile reveal" href="https://www.instagram.com/" target="_blank" rel="noopener"><svg class="icon" aria-hidden="true"><use href="#i-insta"/></svg><span class="contact__label">Instagram</span><span class="contact__value">@your_handle</span></a></li>
+        <li><a class="contact__tile reveal" href="https://www.linkedin.com/" target="_blank" rel="noopener"><svg class="icon" aria-hidden="true"><use href="#i-linkedin"/></svg><span class="contact__label">LinkedIn</span><span class="contact__value">Toku's Ramyum Bar</span></a></li>
+      </ul>
+    </section>
   </main>
 
   <footer class="footer">
@@ -370,6 +408,7 @@
         <a href="#book">Book your seat</a>
         <a href="#inside">Inside</a>
         <a href="#visit">Visit</a>
+        <a href="#contact">Contact</a>
         <button type="button" class="linklike" id="replayIntro">Replay Intro</button>
       </nav>
       <p>© <span id="year">2026</span> Toku's</p>

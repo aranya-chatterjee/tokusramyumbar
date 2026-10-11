@@ -141,6 +141,32 @@
     document.getElementById('bookAgain').addEventListener('click', () => { bookForm.reset(); bookHint.textContent = 'We will confirm by phone.'; bookDone.hidden = true; bookForm.hidden = false; });
   }
 
+  // Post-its: margins on wide screens, zigzag rows between sections on narrow ones
+  const postits = [...document.querySelectorAll('.postits--l .pi, .postits--r .pi')];
+  if (postits.length) {
+    const left = [...document.querySelectorAll('.postits--l .pi')], right = [...document.querySelectorAll('.postits--r .pi')];
+    const order = left.flatMap((n, i) => [n, right[i]]).filter(Boolean);
+    const wide = window.matchMedia('(min-width: 1100px)');
+    const homes = new Map(order.map((n) => [n, n.parentElement]));
+    let rows = [];
+    const place = () => {
+      rows.forEach((r) => r.remove()); rows = [];
+      if (wide.matches) { order.forEach((n) => homes.get(n).appendChild(n)); return; }
+      const slots = [...document.querySelectorAll('main > section:not(.hero), main > .marquee')];
+      const counts = [2, 2, 2, 2, 2, 1, 1];
+      let k = 0;
+      slots.slice(0, counts.length).forEach((slot, s) => {
+        if (k >= order.length) return;
+        const row = document.createElement('div');
+        row.className = 'postit-row' + (s % 2 ? ' postit-row--r' : '');
+        row.setAttribute('aria-hidden', 'true');
+        for (let c = 0; c < counts[s] && k < order.length; c++) row.appendChild(order[k++]);
+        slot.after(row); rows.push(row);
+      });
+    };
+    wide.addEventListener('change', place); place();
+  }
+
   // Note wall (kept in this browser only)
   const KEY = 'tokus-notes';
   const list = document.getElementById('notes');
