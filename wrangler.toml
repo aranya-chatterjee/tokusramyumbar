@@ -14,9 +14,10 @@ binding = "DB"
 database_name = "tokus-bookings"
 database_id = "REPLACE_WITH_ID_FROM_wrangler_d1_create"
 
-# Staff email alerts through Cloudflare Email Routing. ALERT_TO must be a verified destination address.
-[[send_email]]
-name = "MAIL"
+# Staff email alerts through Cloudflare Email Routing. Turn on Email Routing first,
+# verify the staff inbox as a destination address, then remove the # from the next two lines.
+# [[send_email]]
+# name = "MAIL"
 
 [vars]
 ALERT_FROM = "bookings@tokusramyumbar.com"
