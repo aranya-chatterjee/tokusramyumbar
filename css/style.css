@@ -245,20 +245,41 @@ body { position: relative; }
 .marquee__track i { font-style: normal; color: var(--blush); font-size: 1.3rem; }
 @keyframes marquee { to { transform: translateX(-50%); } }
 
-/* STORY BENTO */
+/* STORY: two tilted photos slide in from the sides, then the story lands on a post-it */
+.story { overflow-x: clip; }
 .story .title { margin-bottom: 40px; }
-.bento { display: grid; grid-template-columns: 1.4fr 1fr; grid-template-rows: auto auto; gap: 18px; }
-.bento figure, .bento__text { border-radius: var(--radius); overflow: hidden; }
-.bento__mural { grid-row: 1 / span 2; min-height: 420px; }
-.bento__mural img { width: 100%; height: 100%; object-fit: cover; }
-.bento__text { background: var(--cream-2); padding: clamp(24px, 3vw, 40px); display: grid; gap: 16px; align-content: center; }
-.bento__lead { font: 500 clamp(1.15rem, 1.6vw, 1.35rem)/1.45 var(--f-body); }
-.bento__text p:not(.bento__lead) { color: var(--ink-soft); }
-.bento__wall { position: relative; min-height: 260px; }
-.bento__wall img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; position: absolute; inset: 0; }
-.bento__wall figcaption {
-  position: absolute; left: 14px; bottom: 14px; background: var(--note-yellow); color: var(--ink);
-  font: 400 .9rem/1.2 var(--f-brush); padding: 8px 12px; transform: rotate(-3deg); box-shadow: 0 6px 14px -6px rgba(0,0,0,.4);
+.tale { display: grid; grid-template-columns: 1fr minmax(0, 1.15fr) 1fr; gap: clamp(18px, 3vw, 44px); align-items: center; }
+.tale__photo { margin: 0; padding: 12px 12px 44px; background: #fffaf6; box-shadow: 0 30px 50px -28px rgba(90, 10, 30, .55); transform: rotate(var(--tilt)); }
+.tale__photo img { display: block; width: 100%; aspect-ratio: 4 / 5; object-fit: cover; }
+.tale__photo--l { --tilt: -6deg; --from: -120vw; }
+.tale__photo--r { --tilt: 6deg; --from: 120vw; grid-column: 3; }
+.tale__note {
+  grid-column: 2; grid-row: 1; position: relative; display: grid; gap: 14px;
+  padding: clamp(30px, 3.2vw, 44px) clamp(24px, 2.8vw, 38px); background: var(--note-yellow); color: var(--ink);
+  box-shadow: 0 22px 34px -18px rgba(0,0,0,.45); transform: rotate(-1.5deg);
+}
+.tale__note::before { content: ""; position: absolute; top: -12px; left: 50%; width: 92px; height: 26px; margin-left: -46px; background: rgba(255,255,255,.6); transform: rotate(-3deg); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.tale__lead { font: 600 clamp(1.08rem, 1.4vw, 1.25rem)/1.45 var(--f-body); }
+.tale__note p:not(.tale__lead) { color: #3a2a20; }
+.tale__note strong { color: var(--crimson); font-weight: 600; }
+.js .tale__photo { opacity: 0; transform: translateX(var(--from)) rotate(calc(var(--tilt) * 3)); transition: transform 1s cubic-bezier(.2,.9,.25,1.05), opacity .5s ease; }
+.js .tale__note { opacity: 0; transform: translateY(40px) scale(.85) rotate(4deg); transition: transform .7s cubic-bezier(.2,1.5,.4,1) .75s, opacity .4s ease .75s; }
+.js .tale.is-in .tale__photo { opacity: 1; transform: rotate(var(--tilt)); }
+.js .tale.is-in .tale__photo--r { transition-delay: .15s; }
+.js .tale.is-in .tale__note { opacity: 1; transform: rotate(-1.5deg); }
+@media (max-width: 860px) {
+  .tale { grid-template-columns: 1fr 1fr; gap: 14px 18px; }
+  .tale { padding: 0 6px; }
+  .tale__photo { padding: 8px 8px 28px; }
+  .tale__photo--l { --tilt: -4deg; }
+  .tale__photo--r { --tilt: 4deg; }
+  .tale__photo--r { grid-column: 2; }
+  .tale__note { grid-column: 1 / -1; grid-row: 2; margin-top: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .js .tale__photo, .js .tale__note { opacity: 1; transition: none; }
+  .js .tale__photo { transform: rotate(var(--tilt)); }
+  .js .tale__note { transform: rotate(-1.5deg); }
 }
 
 /* MENU */
