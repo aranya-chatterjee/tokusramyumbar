@@ -12,7 +12,7 @@ not_found_handling = "none"
 [[d1_databases]]
 binding = "DB"
 database_name = "tokus-bookings"
-database_id = "REPLACE_WITH_ID_FROM_wrangler_d1_create"
+database_id = "4b143b4e-80da-4eb7-8d23-ecfa1dba89c7"
 
 # Staff email alerts through Cloudflare Email Routing. Turn on Email Routing first,
 # verify the staff inbox as a destination address, then remove the # from the next two lines.
