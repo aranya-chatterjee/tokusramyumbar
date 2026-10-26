@@ -138,7 +138,7 @@
       document.getElementById('bookSummary').textContent = summary;
       bookForm.hidden = true; bookDone.hidden = false;
     });
-    document.getElementById('bookAgain').addEventListener('click', () => { bookForm.reset(); bookHint.textContent = 'We will confirm by phone.'; bookDone.hidden = true; bookForm.hidden = false; });
+    document.getElementById('bookAgain').addEventListener('click', () => { bookForm.reset(); bookHint.textContent = 'Your request opens in WhatsApp, ready to send to us.'; bookDone.hidden = true; bookForm.hidden = false; });
   }
 
   // Post-its: margins on wide screens, zigzag rows between sections on narrow ones
