@@ -78,7 +78,9 @@ button, .btn, .tab { touch-action: manipulation; -webkit-tap-highlight-color: tr
   backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid color-mix(in srgb, var(--crimson) 14%, transparent);
 }
-.brand { display: flex; flex-direction: column; text-decoration: none; line-height: 1; margin-right: auto; }
+.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; line-height: 1; margin-right: auto; }
+.brand__logo { width: 52px; height: 52px; flex: none; border-radius: 50%; }
+.brand__text { display: flex; flex-direction: column; }
 .brand__mark { font: 400 1.7rem/1 var(--f-brush); color: var(--crimson); }
 .brand__sub { font: 600 .62rem/1 var(--f-body); letter-spacing: .2em; text-transform: uppercase; color: var(--ink-soft); margin-top: 4px; }
 .nav__toggle {
