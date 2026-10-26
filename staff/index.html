@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Toku's bookings</title>
+  <link rel="icon" href="/favicon-32.png">
+  <style>
+    :root { --ink: #1c1416; --cream: #fbf3ea; --paper: #fffaf6; --crimson: #b8143a; --muted: #6f5f62; --line: #eadcd2; --ok: #1f7a4d; --warn: #b26b00; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--cream); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    header { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 12px 16px; background: var(--ink); color: var(--cream); }
+    header h1 { margin: 0; font-size: 1.05rem; flex: 1 1 auto; }
+    header img { width: 34px; height: 34px; border-radius: 50%; vertical-align: middle; margin-right: 8px; }
+    main { max-width: 980px; margin: 0 auto; padding: 16px; display: grid; gap: 18px; }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; border: 0; border-radius: 10px; padding: 8px 12px; background: var(--paper); color: var(--ink); border: 1px solid var(--line); }
+    button.primary { background: var(--crimson); color: #fff; border-color: var(--crimson); font-weight: 600; }
+    button:disabled { opacity: .5; cursor: default; }
+    input, select { padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); min-width: 0; }
+    .datebar { display: flex; gap: 6px; align-items: center; }
+    .datebar button { background: transparent; color: var(--cream); border-color: rgba(255,255,255,.3); }
+    .datebar input { background: transparent; color: var(--cream); border-color: rgba(255,255,255,.3); color-scheme: dark; }
+    .card { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+    .card h2 { margin: 0 0 12px; font-size: 1rem; }
+    .totals { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-bottom: 14px; color: var(--muted); }
+    .totals b { color: var(--ink); font-size: 1.25rem; display: block; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+    .cell { border: 1px solid var(--line); border-radius: 10px; padding: 8px; font-size: .8rem; background: #fff; }
+    .cell b { display: block; font-size: .9rem; }
+    .bar { height: 6px; border-radius: 3px; background: var(--line); margin-top: 6px; overflow: hidden; }
+    .bar i { display: block; height: 100%; background: var(--ok); }
+    .cell.busy .bar i { background: var(--warn); }
+    .cell.full .bar i { background: var(--crimson); }
+    .slot-group { margin-top: 6px; }
+    .slot-group h3 { margin: 14px 0 6px; font-size: .85rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    .bk { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; margin-bottom: 6px; }
+    .bk.is-new { box-shadow: 0 0 0 2px var(--crimson); }
+    .bk .who { font-weight: 600; }
+    .bk .meta { color: var(--muted); font-size: .85rem; }
+    .bk .meta a { color: inherit; }
+    .bk .actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+    .bk .actions button { padding: 6px 10px; font-size: .85rem; }
+    .pill { display: inline-block; font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-left: 6px; vertical-align: 1px; text-transform: uppercase; letter-spacing: .04em; }
+    .pill.confirmed { background: #e6f2ec; color: var(--ok); }
+    .pill.arrived { background: #1f7a4d; color: #fff; }
+    .pill.no_show { background: #fff1db; color: var(--warn); }
+    .pill.cancelled { background: #f1e6e8; color: var(--muted); }
+    .bk.cancelled .who, .bk.no_show .who { text-decoration: line-through; opacity: .6; }
+    form.add { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; align-items: end; }
+    form.add label { display: grid; gap: 4px; font-size: .8rem; color: var(--muted); }
+    form.add .check { display: flex; gap: 6px; align-items: center; }
+    .msg { min-height: 1.4em; color: var(--muted); font-size: .9rem; margin: 8px 0 0; }
+    .msg.err { color: var(--crimson); font-weight: 600; }
+    .empty { color: var(--muted); }
+    #login { max-width: 360px; margin: 12vh auto; text-align: center; }
+    #login form { display: grid; gap: 10px; }
+    @media (max-width: 560px) { .bk { grid-template-columns: minmax(0, 1fr); } .bk .actions { justify-content: flex-start; } }
+  </style>
+</head>
+<body>
+  <div id="login" class="card" hidden>
+    <img src="/img/brand/logo-104.png" alt="" width="64" height="64" style="border-radius:50%">
+    <h2>Toku's staff bookings</h2>
+    <form id="loginForm">
+      <input type="password" id="pin" placeholder="Staff PIN" autocomplete="current-password" required>
+      <button class="primary" type="submit">Open bookings</button>
+      <p class="msg" id="loginMsg"></p>
+    </form>
+  </div>
+
+  <div id="app" hidden>
+    <header>
+      <h1><img src="/img/brand/logo-104.png" alt="">Bookings</h1>
+      <div class="datebar">
+        <button type="button" id="prev" aria-label="Previous day">&lsaquo;</button>
+        <input type="date" id="day">
+        <button type="button" id="next" aria-label="Next day">&rsaquo;</button>
+        <button type="button" id="todayBtn">Today</button>
+      </div>
+    </header>
+    <main>
+      <section class="card">
+        <div class="totals" id="totals"></div>
+        <div class="grid" id="grid"></div>
+      </section>
+      <section class="card">
+        <h2>Bookings <span class="empty" id="updated"></span></h2>
+        <div id="list"></div>
+      </section>
+      <section class="card">
+        <h2>Add a phone or walk-in booking</h2>
+        <form class="add" id="addForm">
+          <label>Name<input name="name" required maxlength="60"></label>
+          <label>Phone<input name="phone" type="tel" required></label>
+          <label>Time<select name="time" id="addTime" required></select></label>
+          <label>Guests<input name="guests" type="number" min="1" max="60" value="2" required></label>
+          <label>Note<input name="note" maxlength="200"></label>
+          <label class="check"><input type="checkbox" name="force"> Allow over capacity</label>
+          <button class="primary" type="submit">Add booking</button>
+        </form>
+        <p class="msg" id="addMsg"></p>
+      </section>
+    </main>
+  </div>
+
+  <script>
+  (() => {
+    const API = '/api/staff';
+    const $ = (id) => document.getElementById(id);
+    let pin = '';
+    try { pin = sessionStorage.getItem('tokusPin') || ''; } catch {}
+    const seen = new Set();
+    let firstLoad = true;
+
+    const localToday = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
+    const shift = (date, n) => { const d = new Date(date + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+
+    async function call(path, opts = {}) {
+      const res = await fetch(API + path, { ...opts, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + pin } });
+      const data = await res.json().catch(() => ({ ok: false, message: 'The booking system did not answer.' }));
+      if (res.status === 401) { logout('That PIN did not work.'); throw new Error('pin'); }
+      return { res, data };
+    }
+
+    function logout(message) {
+      pin = ''; try { sessionStorage.removeItem('tokusPin'); } catch {}
+      $('app').hidden = true; $('login').hidden = false; $('loginMsg').textContent = message || ''; $('loginMsg').className = 'msg' + (message ? ' err' : '');
+      $('pin').focus();
+    }
+
+    function el(tag, props = {}, ...kids) { const n = document.createElement(tag); Object.assign(n, props); n.append(...kids); return n; }
+
+    function render(data) {
+      const live = data.bookings.filter((b) => b.status === 'confirmed' || b.status === 'arrived');
+      const covers = live.reduce((s, b) => s + b.guests, 0);
+      const arrived = data.bookings.filter((b) => b.status === 'arrived').reduce((s, b) => s + b.guests, 0);
+      $('totals').replaceChildren(
+        el('div', {}, el('b', { textContent: live.length }), 'bookings'),
+        el('div', {}, el('b', { textContent: covers }), 'guests expected'),
+        el('div', {}, el('b', { textContent: arrived }), 'guests arrived'),
+      );
+      $('grid').replaceChildren(...data.slots.map((s) => {
+        const pct = Math.min(100, Math.round((s.taken / s.seats) * 100));
+        const cell = el('div', { className: 'cell' + (pct >= 100 ? ' full' : pct >= 70 ? ' busy' : '') },
+          el('b', { textContent: s.label }), `${s.taken}/${s.seats} seats`, el('div', { className: 'bar' }, el('i', { style: `width:${pct}%` })));
+        return cell;
+      }));
+      const addTime = $('addTime'), keep = addTime.value;
+      addTime.replaceChildren(...data.slots.map((s) => el('option', { value: s.time, textContent: `${s.label} (${s.seats - s.taken} free)` })));
+      if (keep) addTime.value = keep;
+
+      const groups = new Map();
+      data.bookings.forEach((b) => { if (!groups.has(b.label)) groups.set(b.label, []); groups.get(b.label).push(b); });
+      if (!data.bookings.length) { $('list').replaceChildren(el('p', { className: 'empty', textContent: 'No bookings for this day yet.' })); }
+      else $('list').replaceChildren(...[...groups].map(([label, items]) => el('div', { className: 'slot-group' },
+        el('h3', { textContent: label }),
+        ...items.map((b) => {
+          const isNew = !firstLoad && !seen.has(b.id);
+          seen.add(b.id);
+          const phone = el('a', { href: 'tel:+' + b.phone, textContent: '+' + b.phone });
+          const wa = el('a', { href: 'https://wa.me/' + b.phone, target: '_blank', rel: 'noopener', textContent: 'WhatsApp' });
+          const meta = el('div', { className: 'meta' }, `${b.guests} ${b.guests === 1 ? 'guest' : 'guests'} · ${b.code} · `, phone, ' · ', wa, b.source === 'staff' ? ' · added by staff' : '');
+          if (b.note) meta.append(el('div', { textContent: 'Note: ' + b.note }));
+          const btn = (text, status) => el('button', { type: 'button', textContent: text, disabled: b.status === status, onclick: () => setStatus(b, status) });
+          const actions = el('div', { className: 'actions' },
+            btn('Arrived', 'arrived'), btn('No-show', 'no_show'),
+            b.status === 'cancelled' ? btn('Restore', 'confirmed') : btn('Cancel', 'cancelled'));
+          return el('div', { className: `bk ${b.status}${isNew ? ' is-new' : ''}` },
+            el('div', {}, el('span', { className: 'who', textContent: b.name }), el('span', { className: 'pill ' + b.status, textContent: b.status.replace('_', '-') }), meta),
+            actions);
+        }))));
+      firstLoad = false;
+      $('updated').textContent = '· updated ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    }
+
+    async function load() {
+      if (!pin) return;
+      try {
+        const { data } = await call('/bookings?date=' + $('day').value);
+        if (data.ok) { $('login').hidden = true; $('app').hidden = false; render(data); }
+      } catch (e) { if (e.message !== 'pin') $('updated').textContent = '· offline, retrying'; }
+    }
+
+    async function setStatus(b, status) {
+      if (status === 'cancelled' && !confirm(`Cancel ${b.name}'s booking for ${b.label}?`)) return;
+      await call('/status', { method: 'POST', body: JSON.stringify({ id: b.id, status }) });
+      load();
+    }
+
+    $('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      pin = $('pin').value.trim();
+      try { sessionStorage.setItem('tokusPin', pin); } catch {}
+      firstLoad = true; seen.clear();
+      await load();
+    });
+    $('day').value = localToday();
+    $('day').addEventListener('change', () => { firstLoad = true; load(); });
+    $('prev').onclick = () => { $('day').value = shift($('day').value, -1); firstLoad = true; load(); };
+    $('next').onclick = () => { $('day').value = shift($('day').value, 1); firstLoad = true; load(); };
+    $('todayBtn').onclick = () => { $('day').value = localToday(); firstLoad = true; load(); };
+
+    $('addForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = e.target.elements;
+      const body = { name: f.name.value, phone: f.phone.value, date: $('day').value, time: f.time.value, guests: f.guests.value, note: f.note.value, force: f.force.checked };
+      const { res, data } = await call('/add', { method: 'POST', body: JSON.stringify(body) });
+      $('addMsg').textContent = data.ok ? `Added ${data.code}.` : data.message;
+      $('addMsg').className = 'msg' + (data.ok ? '' : ' err');
+      if (res.ok) { e.target.reset(); load(); }
+    });
+
+    if (pin) load(); else logout();
+    setInterval(() => { if (!document.hidden) load(); }, 60000);
+  })();
+  </script>
+</body>
+</html>

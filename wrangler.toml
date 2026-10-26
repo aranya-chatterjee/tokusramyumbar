@@ -1,0 +1,28 @@
+# Cloudflare Worker that serves the site and the booking API.
+# Setup steps are in worker/README.md.
+name = "tokusramyumbar"
+main = "worker/index.js"
+compatibility_date = "2025-09-01"
+
+[assets]
+directory = "."
+binding = "ASSETS"
+not_found_handling = "none"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "tokus-bookings"
+database_id = "REPLACE_WITH_ID_FROM_wrangler_d1_create"
+
+# Staff email alerts through Cloudflare Email Routing. ALERT_TO must be a verified destination address.
+[[send_email]]
+name = "MAIL"
+
+[vars]
+ALERT_FROM = "bookings@tokusramyumbar.com"
+ALERT_TO = ""
+
+# Secrets (set with `npx wrangler secret put NAME`, never written here):
+#   STAFF_PIN            passphrase for the /staff/ page
+#   TELEGRAM_BOT_TOKEN   from @BotFather
+#   TELEGRAM_CHAT_ID     the staff group's chat id

@@ -1,0 +1,9 @@
+# Files the Worker must not serve as public pages
+.git
+.wrangler
+node_modules
+worker
+wrangler.toml
+.dev.vars
+README.md
+screenshots

@@ -113,32 +113,149 @@
   });
   current = document.querySelector('#tab-ramen .dish');
 
-  // Book a seat: opens WhatsApp when data-whatsapp holds a number (digits with country code), otherwise shows a confirmation
+  // Book a seat: books live through the API (data-api); falls back to a prefilled WhatsApp message (data-whatsapp) when the API can't be reached or the group is too big
   const bookForm = document.getElementById('bookForm');
   if (bookForm) {
+    const api = bookForm.dataset.api || '';
+    const wa = (bookForm.dataset.whatsapp || '').replace(/\D/g, '');
     const bookDone = document.getElementById('bookDone');
     const bookHint = document.getElementById('bookHint');
+    const slotsBox = document.getElementById('bookSlots');
     const dateEl = document.getElementById('bookDate');
+    const guestsEl = document.getElementById('bookGuests');
+    const f = bookForm.elements;
+    const FALLBACK_TIMES = ['12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00'];
+    const label = (t) => { const h = +t.slice(0, 2); return `${h % 12 || 12}:${t.slice(3)} ${h < 12 ? 'am' : 'pm'}`; };
+    const defaultHint = () => (live ? 'Your table is confirmed straight away.' : 'Your request opens in WhatsApp, ready to send to us.');
+    let live = !!api, slots = [], loadSeq = 0;
+
     const today = new Date(); today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
     dateEl.min = today.toISOString().slice(0, 10);
-    bookForm.addEventListener('submit', (e) => {
+    const later = new Date(today); later.setDate(later.getDate() + 30);
+    dateEl.max = later.toISOString().slice(0, 10);
+
+    const setHint = (text, isError) => { bookHint.textContent = text; bookHint.classList.toggle('is-error', !!isError); };
+    const groupSize = () => (guestsEl.value === '9+' ? 9 : +guestsEl.value);
+
+    function renderSlots(keep) {
+      slotsBox.querySelectorAll('.slot, .book__slots-empty').forEach((n) => n.remove());
+      if (!slots.length) return;
+      const n = groupSize();
+      slots.forEach((s) => {
+        const tooFew = live && s.open && s.left < n && guestsEl.value !== '9+';
+        const lab = document.createElement('label'); lab.className = 'slot';
+        const input = document.createElement('input');
+        Object.assign(input, { type: 'radio', name: 'time', value: s.time, disabled: !s.open || tooFew });
+        input.dataset.label = s.label;
+        if (keep === s.time && !input.disabled) input.checked = true;
+        const span = document.createElement('span');
+        span.textContent = s.label;
+        if (live) {
+          const small = document.createElement('small');
+          small.textContent = !s.open ? (s.left ? 'closed' : 'full') : tooFew ? `${s.left} left` : s.left <= 6 ? `${s.left} seats left` : 'open';
+          span.append(small);
+        }
+        lab.append(input, span); slotsBox.append(lab);
+      });
+    }
+
+    function emptyNote(text) {
+      slotsBox.querySelectorAll('.slot, .book__slots-empty').forEach((n) => n.remove());
+      const p = document.createElement('p'); p.className = 'book__slots-empty'; p.textContent = text; slotsBox.append(p);
+    }
+
+    async function loadSlots() {
+      const date = dateEl.value, keep = f.time && f.time.value, seq = ++loadSeq;
+      if (!date) { slots = []; emptyNote('Pick a date to see open times.'); return; }
+      if (!api) { slots = FALLBACK_TIMES.map((t) => ({ time: t, label: label(t), open: true })); renderSlots(keep); return; }
+      emptyNote('Checking open tables...');
+      try {
+        const res = await fetch(`${api}/slots?date=${encodeURIComponent(date)}`, { headers: { accept: 'application/json' } });
+        if (!res.ok || !(res.headers.get('content-type') || '').includes('json')) throw new Error(res.status);
+        const data = await res.json();
+        if (seq !== loadSeq) return;
+        live = true; setHint(defaultHint());
+        if (data.closed) { slots = []; emptyNote(data.closed); return; }
+        slots = data.slots;
+        renderSlots(keep);
+        if (!slots.some((s) => s.open)) emptyNote('No tables left online for this day. Message us on WhatsApp and we will try to fit you in.');
+      } catch {
+        if (seq !== loadSeq) return;
+        live = false; setHint(defaultHint());
+        slots = FALLBACK_TIMES.map((t) => ({ time: t, label: label(t), open: true }));
+        renderSlots(keep);
+      }
+    }
+
+    function showDone(summary, code) {
+      document.getElementById('bookSummary').textContent = summary;
+      document.getElementById('bookDoneTag').textContent = code ? 'Table confirmed' : 'Request ready';
+      document.getElementById('bookCodeWrap').hidden = !code;
+      document.getElementById('bookCode').textContent = code || '';
+      document.getElementById('bookDoneMsg').firstChild.textContent = code
+        ? 'Show this code when you arrive. To change or cancel, call or WhatsApp us on '
+        : 'Hit send in WhatsApp and we will confirm your table. Or call us on ';
+      bookForm.hidden = true; bookDone.hidden = false; bookDone.focus();
+    }
+
+    function sendWhatsApp(summary) {
+      const note = f.note.value.trim();
+      if (wa) window.open(`https://wa.me/${wa}?text=${encodeURIComponent(`Table request: ${summary}. Phone: ${f.phone.value.trim()}${note ? `. Note: ${note}` : ''}`)}`, '_blank', 'noopener');
+      showDone(summary, null);
+    }
+
+    dateEl.addEventListener('change', loadSlots);
+    guestsEl.addEventListener('change', () => {
+      renderSlots(f.time && f.time.value);
+      if (guestsEl.value === '9+') setHint('For 9 or more, we will sort your table over WhatsApp.');
+      else setHint(defaultHint());
+    });
+
+    bookForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const f = bookForm.elements;
+      const time = slotsBox.querySelector('input:checked');
       let ok = true;
-      [f.name, f.phone, f.date, f.time].forEach((el) => {
-        const bad = !el.value.trim() || (el === f.phone && el.value.replace(/\D/g, '').length < 8);
+      [f.name, f.phone, f.date].forEach((el) => {
+        const bad = !el.value.trim() || (el === f.phone && el.value.replace(/\D/g, '').length < 10);
         el.setAttribute('aria-invalid', String(bad)); if (bad) ok = false;
       });
-      bookHint.classList.toggle('is-error', !ok);
-      if (!ok) { bookHint.textContent = 'Please fill in your name, a phone number, a date and a time.'; bookForm.querySelector('[aria-invalid="true"]').focus(); return; }
+      slotsBox.setAttribute('aria-invalid', String(!time)); if (!time) ok = false;
+      if (!ok) {
+        setHint('Please fill in your name, a 10 digit phone number, a date and a time.', true);
+        (bookForm.querySelector('input[aria-invalid="true"]') || slotsBox.querySelector('input:not(:disabled)') || dateEl).focus();
+        return;
+      }
       const day = new Date(f.date.value + 'T00:00').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
-      const summary = `${f.name.value.trim()}, ${f.guests.value} ${f.guests.value === '1' ? 'guest' : 'guests'}, ${day} at ${f.time.value}`;
-      const wa = bookForm.dataset.whatsapp.replace(/\D/g, '');
-      if (wa) window.open(`https://wa.me/${wa}?text=${encodeURIComponent(`Table request: ${summary}. Phone: ${f.phone.value.trim()}`)}`, '_blank', 'noopener');
-      document.getElementById('bookSummary').textContent = summary;
-      bookForm.hidden = true; bookDone.hidden = false;
+      const guests = guestsEl.value === '9+' ? '9 or more guests' : `${guestsEl.value} ${guestsEl.value === '1' ? 'guest' : 'guests'}`;
+      const summary = `${f.name.value.trim()}, ${guests}, ${day} at ${time.dataset.label}`;
+      if (!live || guestsEl.value === '9+') { sendWhatsApp(summary); return; }
+
+      bookForm.classList.add('is-busy'); setHint('Booking your table...');
+      try {
+        const res = await fetch(`${api}/book`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ name: f.name.value, phone: f.phone.value, date: f.date.value, time: time.value, guests: guestsEl.value, note: f.note.value, website: f.website.value }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) { showDone(summary, data.code); return; }
+        if (res.status >= 500 || !data.message) throw new Error(res.status);
+        setHint(data.message, true);
+        if (data.error === 'full' || data.error === 'time') loadSlots();
+        if (f[data.error] && f[data.error].focus) { f[data.error].setAttribute('aria-invalid', 'true'); f[data.error].focus(); }
+      } catch {
+        setHint('We could not reach the booking system, so this opens WhatsApp instead.', true);
+        live = false; sendWhatsApp(summary);
+      } finally {
+        bookForm.classList.remove('is-busy');
+      }
     });
-    document.getElementById('bookAgain').addEventListener('click', () => { bookForm.reset(); bookHint.textContent = 'Your request opens in WhatsApp, ready to send to us.'; bookDone.hidden = true; bookForm.hidden = false; });
+
+    document.getElementById('bookAgain').addEventListener('click', () => {
+      bookForm.reset(); slots = []; emptyNote('Pick a date to see open times.');
+      live = !!api; setHint('Pick a date and time. Your table is confirmed straight away.');
+      bookDone.hidden = true; bookForm.hidden = false;
+    });
   }
 
   // Post-its: margins on wide screens, zigzag rows between sections on narrow ones

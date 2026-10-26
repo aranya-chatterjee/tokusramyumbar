@@ -329,32 +329,33 @@
           <h2 class="title title--light"><span class="title__plain">Book your</span> <span class="title__brush">seat</span></h2>
           <p>Tell us when you are coming and how many of you there are. We will hold a table by the neon wall.</p>
         </div>
-        <form class="book__form" id="bookForm" novalidate data-whatsapp="917987225180">
+        <form class="book__form" id="bookForm" novalidate data-whatsapp="917987225180" data-api="/api">
           <div class="book__row">
-            <label>Name<input name="name" type="text" autocomplete="name" required></label>
+            <label>Name<input name="name" type="text" autocomplete="name" maxlength="60" required></label>
             <label>Phone<input name="phone" type="tel" inputmode="tel" autocomplete="tel" required></label>
           </div>
           <div class="book__row">
             <label>Date<input name="date" type="date" id="bookDate" required></label>
-            <label>Time
-              <select name="time" required>
-                <option value="" disabled selected>Pick a time</option>
-                <option>12:00 pm</option><option>1:00 pm</option><option>2:00 pm</option><option>3:00 pm</option><option>4:00 pm</option><option>5:00 pm</option><option>6:00 pm</option><option>7:00 pm</option><option>8:00 pm</option><option>9:00 pm</option><option>10:00 pm</option>
-              </select>
-            </label>
             <label>Guests
-              <select name="guests" required>
-                <option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10+</option>
+              <select name="guests" id="bookGuests" required>
+                <option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option value="9+">9 or more</option>
               </select>
             </label>
           </div>
-          <p class="book__hint" id="bookHint" role="status" aria-live="polite">Your request opens in WhatsApp, ready to send to us.</p>
-          <button class="btn btn--cream" type="submit">Book your seat <svg class="icon"><use href="#i-arrow"/></svg></button>
+          <fieldset class="book__slots" id="bookSlots">
+            <legend>Time</legend>
+            <p class="book__slots-empty">Pick a date to see open times.</p>
+          </fieldset>
+          <label class="book__note">Anything we should know? <span>(optional)</span><input name="note" type="text" maxlength="200" placeholder="Birthday, high chair, allergies..."></label>
+          <label class="book__trap" aria-hidden="true">Leave this empty<input name="website" type="text" tabindex="-1" autocomplete="off"></label>
+          <p class="book__hint" id="bookHint" role="status" aria-live="polite">Pick a date and time. Your table is confirmed straight away.</p>
+          <button class="btn btn--cream" type="submit" id="bookSubmit">Book your seat <svg class="icon"><use href="#i-arrow"/></svg></button>
         </form>
-        <div class="book__done" id="bookDone" hidden>
-          <p class="eyebrow">Request received</p>
+        <div class="book__done" id="bookDone" hidden tabindex="-1">
+          <p class="eyebrow" id="bookDoneTag">Table confirmed</p>
           <h3 id="bookSummary"></h3>
-          <p>Hit send in WhatsApp and we will confirm your table. Or call us on <a href="tel:+917987225180">+91 79872 25180</a>.</p>
+          <p class="book__code" id="bookCodeWrap">Booking code <strong id="bookCode"></strong></p>
+          <p id="bookDoneMsg">Show this code when you arrive. To change or cancel, call or WhatsApp us on <a href="tel:+917987225180">+91 79872 25180</a>.</p>
           <button class="btn btn--cream" type="button" id="bookAgain">Book another</button>
         </div>
       </div>

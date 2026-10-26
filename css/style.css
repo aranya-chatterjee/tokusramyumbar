@@ -135,6 +135,26 @@ body.nav-open .brand { visibility: hidden; }
 .book__form .btn { justify-self: start; }
 .book__done { display: grid; gap: 14px; align-content: center; justify-items: start; }
 .book__done[hidden], .book__form[hidden] { display: none; }
+.book__slots { border: 0; padding: 0; margin: 0; min-width: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.book__slots legend { font: 600 .85rem/1 var(--f-body); color: var(--blush); padding: 0; margin-bottom: 8px; }
+.book__slots-empty { font-size: .9rem; color: #f3e2e5; opacity: .8; margin: 0; }
+.slot { position: relative; }
+.slot input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.slot span { display: grid; gap: 2px; min-width: 82px; padding: 9px 12px; border-radius: 12px; border: 2px solid rgba(255,250,246,.25); color: var(--cream); font: 600 .95rem/1.1 var(--f-body); text-align: center; transition: background .15s, border-color .15s, color .15s; }
+.slot small { font: 500 .72rem/1.1 var(--f-body); color: #f3e2e5; opacity: .85; }
+.slot input:hover + span { border-color: rgba(255,250,246,.6); }
+.slot input:focus-visible + span { outline: 2px solid #ffd34d; outline-offset: 2px; }
+.slot input:checked + span { background: #fffaf6; border-color: #fffaf6; color: var(--ink); }
+.slot input:checked + span small { color: var(--crimson); opacity: 1; }
+.slot input:disabled { cursor: not-allowed; }
+.slot input:disabled + span { opacity: .38; text-decoration: line-through; }
+.book__slots[aria-invalid="true"] legend { color: #ffe27a; }
+.book__note span { font-weight: 500; opacity: .7; }
+.book__trap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.book__form.is-busy .btn { opacity: .6; pointer-events: none; }
+.book__code { font-size: .95rem; color: #f3e2e5; }
+.book__code strong { display: inline-block; margin-left: 6px; padding: 4px 10px; border-radius: 8px; background: #fffaf6; color: var(--ink); font: 700 1.05rem/1 var(--f-body); letter-spacing: .08em; }
+.book__code[hidden] { display: none; }
 .book__done .eyebrow { color: var(--blush); }
 .book__done h3 { font: 400 clamp(1.5rem, 3vw, 2.2rem)/1.2 var(--f-brush); color: #ffd2dc; }
 @media (max-width: 960px) { .book__card { grid-template-columns: minmax(0, 1fr); } }
