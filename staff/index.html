@@ -9,6 +9,7 @@
   <style>
     :root { --ink: #1c1416; --cream: #fbf3ea; --paper: #fffaf6; --crimson: #b8143a; --muted: #6f5f62; --line: #eadcd2; --ok: #1f7a4d; --warn: #b26b00; }
     * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
     body { margin: 0; background: var(--cream); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
     header { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 12px 16px; background: var(--ink); color: var(--cream); }
     header h1 { margin: 0; font-size: 1.05rem; flex: 1 1 auto; }
@@ -54,6 +55,44 @@
     .msg { min-height: 1.4em; color: var(--muted); font-size: .9rem; margin: 8px 0 0; }
     .msg.err { color: var(--crimson); font-weight: 600; }
     .empty { color: var(--muted); }
+    .tabs { display: flex; gap: 4px; flex: 1 1 auto; align-items: center; }
+    .tabs img { width: 34px; height: 34px; border-radius: 50%; margin-right: 6px; }
+    .tabs button { background: transparent; color: var(--cream); border-color: transparent; font-weight: 600; }
+    .tabs button[aria-selected="true"] { background: var(--cream); color: var(--ink); }
+    .tabs .count { display: inline-block; min-width: 20px; margin-left: 4px; padding: 0 6px; border-radius: 999px; background: var(--crimson); color: #fff; font-size: .75rem; line-height: 20px; }
+    .tabs .count:empty { display: none; }
+    .topbar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+    .topbar .totals { margin: 0; }
+    .tables { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .tables button { font-size: .85rem; padding: 6px 10px; }
+    .tables button.on { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+    .tables button b { font-variant-numeric: tabular-nums; }
+    .bill { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: #fff; border: 1px solid var(--line); }
+    .board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start; }
+    .col h2 { display: flex; justify-content: space-between; margin: 0 0 8px; font-size: .85rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+    .col.new h2 { color: var(--crimson); }
+    .col > div { display: grid; gap: 8px; }
+    .od { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: grid; gap: 8px; }
+    .od.is-new { box-shadow: 0 0 0 2px var(--crimson); }
+    .od__head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+    .od__table { font-size: 1.15rem; font-weight: 800; white-space: nowrap; }
+    .od__meta { color: var(--muted); font-size: .8rem; text-align: right; }
+    .od ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+    .od li b { display: inline-block; min-width: 26px; font-variant-numeric: tabular-nums; }
+    .od__note { background: #fff6d6; border-radius: 8px; padding: 6px 8px; font-size: .85rem; }
+    .od__foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .od__foot .sum { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .od__foot .btns { display: flex; gap: 6px; }
+    .od__foot button { padding: 6px 10px; font-size: .85rem; }
+    .link { background: none; border: 0; padding: 0; color: var(--muted); text-decoration: underline; font-size: .8rem; }
+    .done-list { display: grid; gap: 4px; font-size: .9rem; color: var(--muted); }
+    .done-list div { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .menu-list { display: grid; gap: 4px; }
+    .menu-list h3 { margin: 12px 0 4px; font-size: .85rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    .menu-list div { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+    .menu-list div.off span { text-decoration: line-through; color: var(--muted); }
+    .menu-list button.off { background: var(--crimson); color: #fff; border-color: var(--crimson); }
+    @media (max-width: 820px) { .board { grid-template-columns: minmax(0, 1fr); } }
     #login { max-width: 360px; margin: 12vh auto; text-align: center; }
     #login form { display: grid; gap: 10px; }
     @media (max-width: 560px) { .bk { grid-template-columns: minmax(0, 1fr); } .bk .actions { justify-content: flex-start; } }
@@ -62,17 +101,22 @@
 <body>
   <div id="login" class="card" hidden>
     <img src="/img/brand/logo-104.png" alt="" width="64" height="64" style="border-radius:50%">
-    <h2>Toku's staff bookings</h2>
+    <h2>Toku's staff</h2>
     <form id="loginForm">
       <input type="password" id="pin" placeholder="Staff PIN" autocomplete="current-password" required>
-      <button class="primary" type="submit">Open bookings</button>
+      <button class="primary" type="submit">Open</button>
       <p class="msg" id="loginMsg"></p>
     </form>
   </div>
 
   <div id="app" hidden>
     <header>
-      <h1><img src="/img/brand/logo-104.png" alt="">Bookings</h1>
+      <nav class="tabs" role="tablist" aria-label="Staff views">
+        <img src="/img/brand/logo-104.png" alt="">
+        <button type="button" role="tab" data-view="orders" aria-selected="true">Orders<span class="count" id="newCount"></span></button>
+        <button type="button" role="tab" data-view="bookings" aria-selected="false">Bookings</button>
+        <button type="button" role="tab" data-view="menu" aria-selected="false">Menu</button>
+      </nav>
       <div class="datebar">
         <button type="button" id="prev" aria-label="Previous day">&lsaquo;</button>
         <input type="date" id="day">
@@ -80,7 +124,37 @@
         <button type="button" id="todayBtn">Today</button>
       </div>
     </header>
-    <main>
+    <main id="view-orders">
+      <section class="card">
+        <div class="topbar">
+          <div class="totals" id="orderTotals"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" id="soundBtn" aria-pressed="false">Sound off</button>
+          </div>
+        </div>
+        <div class="tables" id="tableChips"></div>
+        <div class="bill" id="bill" hidden></div>
+      </section>
+      <div class="board" id="board">
+        <section class="col new"><h2>New <span id="cNew"></span></h2><div id="colNew"></div></section>
+        <section class="col"><h2>Preparing <span id="cPrep"></span></h2><div id="colPrep"></div></section>
+        <section class="col"><h2>Served, to pay <span id="cServed"></span></h2><div id="colServed"></div></section>
+      </div>
+      <section class="card">
+        <h2>Paid and cancelled today</h2>
+        <div class="done-list" id="doneList"></div>
+      </section>
+    </main>
+
+    <main id="view-menu" hidden>
+      <section class="card">
+        <h2>Sold out today? <a href="/staff/qr.html" target="_blank" style="float:right;font-size:.85rem;font-weight:600;color:var(--crimson)">Print table QR codes</a></h2>
+        <p class="msg">Tap a dish to mark it sold out. Guests can't order it until you tap it again.</p>
+        <div class="menu-list" id="menuList"></div>
+      </section>
+    </main>
+
+    <main id="view-bookings" hidden>
       <section class="card">
         <div class="totals" id="totals"></div>
         <div class="grid" id="grid"></div>
@@ -175,7 +249,7 @@
       $('updated').textContent = '· updated ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     }
 
-    async function load() {
+    async function loadBookings() {
       if (!pin) return;
       try {
         const { data } = await call('/bookings?date=' + $('day').value);
@@ -186,21 +260,158 @@
     async function setStatus(b, status) {
       if (status === 'cancelled' && !confirm(`Cancel ${b.name}'s booking for ${b.label}?`)) return;
       await call('/status', { method: 'POST', body: JSON.stringify({ id: b.id, status }) });
+      loadBookings();
+    }
+
+
+    // ---- views ----
+    let view = 'orders';
+    try { view = sessionStorage.getItem('tokusView') || 'orders'; } catch {}
+    function show(v) {
+      view = v;
+      try { sessionStorage.setItem('tokusView', v); } catch {}
+      document.querySelectorAll('.tabs [role="tab"]').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.view === v)));
+      ['orders', 'bookings', 'menu'].forEach((n) => { $('view-' + n).hidden = n !== v; });
       load();
+    }
+    document.querySelectorAll('.tabs [role="tab"]').forEach((t) => { t.onclick = () => show(t.dataset.view); });
+
+    async function load() {
+      if (!pin) return;
+      await loadOrders();
+      if (view === 'bookings') await loadBookings();
+    }
+
+    // ---- orders ----
+    const rupees = (n) => '₹' + Number(n).toLocaleString('en-IN');
+    const tableName = (t) => 'Table ' + t;
+    const ago = (sqlTime) => {
+      const mins = Math.max(0, Math.round((Date.now() - Date.parse(sqlTime.replace(' ', 'T') + 'Z')) / 60000));
+      return mins < 1 ? 'just now' : mins < 60 ? `${mins} min ago` : `${Math.floor(mins / 60)} h ${mins % 60} min ago`;
+    };
+    let od = null, tableFilter = '', seenOrders = new Set(), firstOrders = true, sound = false;
+
+    function beep() {
+      if (!sound) return;
+      try {
+        const ctx = beep.ctx || (beep.ctx = new (window.AudioContext || window.webkitAudioContext)());
+        [0, 0.18].forEach((t) => {
+          const o = ctx.createOscillator(), g = ctx.createGain();
+          o.frequency.value = 880; g.gain.setValueAtTime(0.25, ctx.currentTime + t); g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.15);
+          o.connect(g).connect(ctx.destination); o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + 0.16);
+        });
+      } catch {}
+    }
+    $('soundBtn').onclick = () => {
+      sound = !sound; $('soundBtn').textContent = sound ? 'Sound on' : 'Sound off'; $('soundBtn').setAttribute('aria-pressed', String(sound));
+      if (sound) beep();
+    };
+
+    async function loadOrders() {
+      try {
+        const { data } = await call('/orders?date=' + $('day').value);
+        if (!data.ok) return;
+        $('login').hidden = true; $('app').hidden = false;
+        od = data; renderOrders(); renderMenuList();
+      } catch (e) { if (e.message !== 'pin') $('orderTotals').textContent = 'Offline, retrying...'; }
+    }
+
+    function orderCard(o) {
+      const isNew = !firstOrders && !seenOrders.has(o.id);
+      const next = { new: ['Start preparing', 'preparing'], preparing: ['Served', 'served'], served: ['Paid', 'paid'] }[o.status];
+      const card = el('article', { className: 'od' + (isNew ? ' is-new' : '') },
+        el('div', { className: 'od__head' }, el('span', { className: 'od__table', textContent: tableName(o.table_no) }),
+          el('span', { className: 'od__meta', textContent: `${o.code} · ${ago(o.created_at)}${o.name ? ' · ' + o.name : ''}` })),
+        el('ul', {}, ...o.items.map((i) => el('li', {}, el('b', { textContent: i.qty + '×' }), ' ' + i.name))));
+      if (o.note) card.append(el('div', { className: 'od__note', textContent: o.note }));
+      card.append(el('div', { className: 'od__foot' }, el('span', { className: 'sum', textContent: rupees(o.total) }),
+        el('span', { className: 'btns' },
+          el('button', { type: 'button', className: 'link', textContent: 'Cancel', onclick: () => setOrder(o, 'cancelled') }),
+          el('button', { type: 'button', className: 'primary', textContent: next[0], onclick: () => setOrder(o, next[1]) }))));
+      return card;
+    }
+
+    function renderOrders() {
+      const all = od.orders;
+      const open = all.filter((o) => ['new', 'preparing', 'served'].includes(o.status));
+      const fresh = all.filter((o) => !seenOrders.has(o.id));
+      if (!firstOrders && fresh.length) beep();
+      const paid = all.filter((o) => o.status === 'paid');
+      const newCount = open.filter((o) => o.status === 'new').length;
+      $('newCount').textContent = newCount || '';
+      $('orderTotals').replaceChildren(
+        el('div', {}, el('b', { textContent: open.length }), 'open orders'),
+        el('div', {}, el('b', { textContent: rupees(open.reduce((s, o) => s + o.total, 0)) }), 'still to pay'),
+        el('div', {}, el('b', { textContent: rupees(paid.reduce((s, o) => s + o.total, 0)) }), 'paid today'));
+
+      // one chip per table with an open bill
+      const bills = new Map();
+      open.forEach((o) => bills.set(o.table_no, (bills.get(o.table_no) || 0) + o.total));
+      const tables = [...bills.keys()].sort((a, b) => a - b);
+      if (tableFilter && !bills.has(tableFilter)) tableFilter = '';
+      $('tableChips').replaceChildren(
+        el('button', { type: 'button', className: tableFilter ? '' : 'on', textContent: 'All tables', onclick: () => { tableFilter = ''; renderOrders(); } }),
+        ...tables.map((t) => el('button', { type: 'button', className: tableFilter === t ? 'on' : '', onclick: () => { tableFilter = t; renderOrders(); } },
+          tableName(t) + ' · ', el('b', { textContent: rupees(bills.get(t)) }))));
+      $('bill').hidden = !tableFilter;
+      if (tableFilter) {
+        const mine = open.filter((o) => o.table_no === tableFilter);
+        const lines = new Map();
+        mine.forEach((o) => o.items.forEach((i) => lines.set(i.name, (lines.get(i.name) || 0) + i.qty)));
+        $('bill').replaceChildren(el('b', { textContent: `${tableName(tableFilter)} bill: ${rupees(bills.get(tableFilter))}` }),
+          el('span', { className: 'empty', textContent: [...lines].map(([n, q]) => `${q}× ${n}`).join(', ') }),
+          el('button', { type: 'button', className: 'primary', textContent: 'Mark whole table paid', onclick: async () => {
+            if (!confirm(`Mark every open order for ${tableName(tableFilter)} as paid?`)) return;
+            for (const o of mine) await call('/order-status', { method: 'POST', body: JSON.stringify({ id: o.id, status: 'paid' }) });
+            tableFilter = ''; loadOrders();
+          } }));
+      }
+
+      const shown = open.filter((o) => !tableFilter || o.table_no === tableFilter);
+      const col = (st, box, cnt, oldestFirst) => {
+        const list = shown.filter((o) => o.status === st);
+        if (!oldestFirst) list.reverse();
+        $(cnt).textContent = list.length || '';
+        $(box).replaceChildren(...(list.length ? list.map(orderCard) : [el('p', { className: 'empty', textContent: 'Nothing here.' })]));
+      };
+      col('new', 'colNew', 'cNew', true); col('preparing', 'colPrep', 'cPrep', true); col('served', 'colServed', 'cServed', true);
+      const done = all.filter((o) => o.status === 'paid' || o.status === 'cancelled').reverse();
+      $('doneList').replaceChildren(...(done.length ? done.map((o) => el('div', {},
+        el('span', { textContent: `${tableName(o.table_no)} · ${o.code} · ${o.items.map((i) => i.qty + '× ' + i.name).join(', ')}` }),
+        el('span', {}, `${o.status === 'paid' ? rupees(o.total) : 'cancelled'} `, el('button', { type: 'button', className: 'link', textContent: 'Reopen', onclick: () => setOrder(o, 'served') })))) : [el('p', { className: 'empty', textContent: 'None yet.' })]));
+      all.forEach((o) => seenOrders.add(o.id));
+      firstOrders = false;
+    }
+
+    async function setOrder(o, status) {
+      if (status === 'cancelled' && !confirm(`Cancel order ${o.code} for ${tableName(o.table_no)}?`)) return;
+      await call('/order-status', { method: 'POST', body: JSON.stringify({ id: o.id, status }) });
+      loadOrders();
+    }
+
+    // sold-out switches
+    function renderMenuList() {
+      $('menuList').replaceChildren(...od.categories.flatMap((c) => [el('h3', { textContent: c.name }),
+        ...od.menu.filter((m) => m.cat === c.id).map((m) => el('div', { className: m.soldOut ? 'off' : '' },
+          el('span', { textContent: `${m.name} · ${rupees(m.price)}` }),
+          el('button', { type: 'button', className: m.soldOut ? 'off' : '', textContent: m.soldOut ? 'Sold out' : 'Available', onclick: async () => {
+            await call('/sold-out', { method: 'POST', body: JSON.stringify({ id: m.id, soldOut: !m.soldOut }) });
+            loadOrders();
+          } })))]));
     }
 
     $('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       pin = $('pin').value.trim();
       try { sessionStorage.setItem('tokusPin', pin); } catch {}
-      firstLoad = true; seen.clear();
+      firstLoad = true; seen.clear(); firstOrders = true; seenOrders.clear();
       await load();
     });
     $('day').value = localToday();
-    $('day').addEventListener('change', () => { firstLoad = true; load(); });
-    $('prev').onclick = () => { $('day').value = shift($('day').value, -1); firstLoad = true; load(); };
-    $('next').onclick = () => { $('day').value = shift($('day').value, 1); firstLoad = true; load(); };
-    $('todayBtn').onclick = () => { $('day').value = localToday(); firstLoad = true; load(); };
+    $('day').addEventListener('change', () => { firstLoad = true; firstOrders = true; load(); });
+    $('prev').onclick = () => { $('day').value = shift($('day').value, -1); firstLoad = true; firstOrders = true; load(); };
+    $('next').onclick = () => { $('day').value = shift($('day').value, 1); firstLoad = true; firstOrders = true; load(); };
+    $('todayBtn').onclick = () => { $('day').value = localToday(); firstLoad = true; firstOrders = true; load(); };
 
     $('addForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -209,11 +420,11 @@
       const { res, data } = await call('/add', { method: 'POST', body: JSON.stringify(body) });
       $('addMsg').textContent = data.ok ? `Added ${data.code}.` : data.message;
       $('addMsg').className = 'msg' + (data.ok ? '' : ' err');
-      if (res.ok) { e.target.reset(); load(); }
+      if (res.ok) { e.target.reset(); loadBookings(); }
     });
 
-    if (pin) load(); else logout();
-    setInterval(() => { if (!document.hidden) load(); }, 60000);
+    if (pin) show(view); else logout();
+    setInterval(() => { if (!document.hidden) load(); }, 10000);
   })();
   </script>
 </body>

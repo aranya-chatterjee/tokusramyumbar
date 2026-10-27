@@ -1,30 +1,18 @@
 // Toku's booking API. Static files are served from the repo root; only /api/* reaches this code.
 import { CONFIG, slotTimes, slotLabel, nowLocal, addDays } from './config.js';
-import { notifyStaff } from './notify.js';
+import { notifyStaff, notifyOrder } from './notify.js';
+import { json, fail, isDate, clean, newCode, readBody } from './util.js';
+import * as orders from './orders.js';
 
 const ACTIVE = "status IN ('confirmed', 'arrived')";
 
-const json = (data, status = 200) => new Response(JSON.stringify(data), {
-  status,
-  headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
-});
-const fail = (error, message, status = 400, extra = {}) => json({ ok: false, error, message, ...extra }, status);
-
-const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '') && !Number.isNaN(Date.parse(s + 'T00:00:00Z'));
 const toMin = (t) => +t.slice(0, 2) * 60 + +t.slice(3);
-const clean = (s, max) => String(s ?? '').replace(/[\u0000-\u001f]+/g, ' ').trim().slice(0, max);
 
 function normalisePhone(raw) {
   let d = String(raw ?? '').replace(/\D/g, '');
   if (d.length === 11 && d.startsWith('0')) d = d.slice(1);
   if (d.length === 10) d = '91' + d;
   return d.length >= 11 && d.length <= 13 ? d : null;
-}
-
-function newCode() {
-  const abc = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-  const bytes = crypto.getRandomValues(new Uint8Array(5));
-  return 'TK-' + [...bytes].map((x) => abc[x % abc.length]).join('');
 }
 
 // Why a date cannot be booked online, or null when it can
@@ -59,15 +47,11 @@ async function getSlots(env, url) {
   return json({ ...base, slots });
 }
 
-async function readBody(request) {
-  try { return await request.json(); } catch { return null; }
-}
-
 // Inserts only if the slot still has room, in one statement, so two guests can't take the last seats at once
 async function insertBooking(env, b, enforceCapacity) {
   const cap = enforceCapacity ? CONFIG.seatsPerSlot : 1e9;
   for (let attempt = 0; attempt < 3; attempt++) {
-    b.code = newCode();
+    b.code = newCode('TK-');
     try {
       const res = await env.DB.prepare(
         `INSERT INTO bookings (code, name, phone, date, slot, guests, note, source)
@@ -179,6 +163,13 @@ export default {
       switch (route) {
         case 'GET /api/slots': return await getSlots(env, url);
         case 'POST /api/book': return await createBooking(env, request, ctx);
+        case 'GET /api/menu': return await orders.getMenu(env);
+        case 'POST /api/order': {
+          const res = await orders.placeOrder(env, request);
+          if (res.order) ctx.waitUntil(notifyOrder(env, res.order));
+          return res.response;
+        }
+        case 'GET /api/order': return await orders.orderStatus(env, url);
       }
       if (url.pathname.startsWith('/api/staff/')) {
         if (!staffAllowed(env, request)) return fail('pin', 'Wrong staff PIN.', 401);
@@ -186,6 +177,9 @@ export default {
           case 'GET /api/staff/bookings': return await staffList(env, url);
           case 'POST /api/staff/status': return await staffSetStatus(env, request);
           case 'POST /api/staff/add': return await staffAdd(env, request);
+          case 'GET /api/staff/orders': return await orders.staffOrders(env, url);
+          case 'POST /api/staff/order-status': return await orders.setOrderStatus(env, request);
+          case 'POST /api/staff/sold-out': return await orders.setSoldOut(env, request);
         }
       }
       if (url.pathname.startsWith('/api/')) return fail('not_found', 'Not found.', 404);

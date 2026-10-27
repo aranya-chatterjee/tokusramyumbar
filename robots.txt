@@ -1,6 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /staff/
+Disallow: /order/
 Disallow: /api/
 
 Sitemap: https://tokusramyumbar.com/sitemap.xml

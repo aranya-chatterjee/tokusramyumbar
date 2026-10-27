@@ -12,6 +12,21 @@ export async function notifyStaff(env, b, kind = 'New booking') {
   ];
   if (b.note) lines.push(`Note: ${b.note}`);
   const text = lines.join('\n');
+  await send(env, `${lines[0]}: ${lines[2]}, ${b.guests} pax`, text);
+}
+
+// A new table order. Telegram only: email for every order would flood the inbox.
+export async function notifyOrder(env, o) {
+  const lines = [`New order ${o.code}, table ${o.table}`];
+  if (o.name) lines.push(o.name);
+  o.lines.forEach((l) => lines.push(`${l.qty} x ${l.name}`));
+  if (o.note) lines.push(`Note: ${o.note}`);
+  lines.push(`Total: Rs ${o.total}`);
+  await send(env, null, lines.join('\n'));
+}
+
+// subject null means skip email
+async function send(env, subject, text) {
   const jobs = [];
 
   if (env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) {
@@ -22,12 +37,12 @@ export async function notifyStaff(env, b, kind = 'New booking') {
     }));
   }
 
-  if (env.MAIL && env.ALERT_FROM && env.ALERT_TO) {
+  if (subject && env.MAIL && env.ALERT_FROM && env.ALERT_TO) {
     const raw = [
       `From: Toku's Bookings <${env.ALERT_FROM}>`,
       `To: ${env.ALERT_TO}`,
-      `Subject: ${lines[0]}: ${lines[2]}, ${b.guests} pax`,
-      `Message-ID: <${b.code}.${Date.now()}@${env.ALERT_FROM.split('@')[1]}>`,
+      `Subject: ${subject}`,
+      `Message-ID: <${Date.now()}.${Math.random().toString(36).slice(2)}@${env.ALERT_FROM.split('@')[1]}>`,
       `Date: ${new Date().toUTCString()}`,
       'MIME-Version: 1.0',
       'Content-Type: text/plain; charset=UTF-8',

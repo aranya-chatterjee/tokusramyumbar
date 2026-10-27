@@ -9,6 +9,11 @@ export const CONFIG = {
   leadMinutes: 60,         // earliest booking is this long from now
   closedWeekdays: [],      // 0 = Sunday ... 6 = Saturday
   maxActivePerPhone: 3,    // upcoming bookings one phone number can hold
+
+  // Table ordering
+  tables: 12,              // tables numbered 1 to this; each gets a QR code to /order/?table=N
+  maxPerItem: 20,          // most of one dish in a single order
+  maxItemsPerOrder: 40,    // most dishes in a single order
 };
 
 export const TZ_OFFSET_MIN = 330; // India Standard Time, UTC+5:30, no DST

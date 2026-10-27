@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#1c1214">
+  <title>Order at your table · Toku's</title>
+  <link rel="icon" href="/favicon-32.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <style>
+    @font-face { font-family: 'Shojumaru'; font-weight: 400; font-display: swap; src: url('/fonts/shojumaru-400.woff2') format('woff2'); }
+    @font-face { font-family: 'Big Shoulders Display'; font-weight: 900; font-display: swap; src: url('/fonts/bigshoulders-900.woff2') format('woff2'); }
+    @font-face { font-family: 'Outfit'; font-weight: 400; font-display: swap; src: url('/fonts/outfit-400.woff2') format('woff2'); }
+    @font-face { font-family: 'Outfit'; font-weight: 600; font-display: swap; src: url('/fonts/outfit-600.woff2') format('woff2'); }
+    :root {
+      --cream: #fbeee4; --paper: #fffaf6; --blush: #f2c3cc; --crimson: #b8143a; --crimson-deep: #8e0d2c;
+      --ink: #1c1214; --ink-soft: #5b4a4d; --line: #ead8cc; --veg: #1f8a4c; --nonveg: #a5361d;
+      --f-brush: 'Shojumaru', 'Impact', serif; --f-display: 'Big Shoulders Display', 'Arial Narrow', sans-serif; --f-body: 'Outfit', system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html { scroll-padding-top: 120px; }
+    body { margin: 0; background: var(--cream); color: var(--ink); font: 16px/1.45 var(--f-body); padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    :focus-visible { outline: 2px solid var(--crimson); outline-offset: 2px; }
+
+    .top { position: sticky; top: 0; z-index: 5; background: var(--ink); color: var(--cream); padding: calc(10px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); }
+    .top__row { display: flex; align-items: center; gap: 12px; max-width: 760px; margin: 0 auto; }
+    .top img { width: 40px; height: 40px; border-radius: 50%; }
+    .top h1 { margin: 0; flex: 1; font: 900 1.45rem/1 var(--f-display); text-transform: uppercase; letter-spacing: .02em; }
+    .table-chip { display: flex; align-items: center; gap: 6px; background: var(--crimson); color: #fff; border: 0; border-radius: 999px; padding: 7px 14px; font-weight: 600; }
+    .table-chip select { background: transparent; border: 0; color: #fff; font-weight: 600; padding: 0; }
+    .table-chip select option { color: var(--ink); }
+    .tabs { display: flex; gap: 6px; overflow-x: auto; max-width: 760px; margin: 10px auto 0; padding-bottom: 10px; scrollbar-width: none; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tabs a { flex: none; padding: 7px 14px; border-radius: 999px; color: var(--cream); text-decoration: none; border: 1px solid rgba(251,238,228,.25); font-weight: 600; font-size: .92rem; }
+    .tabs a.on { background: var(--cream); color: var(--ink); border-color: var(--cream); }
+
+    main { max-width: 760px; margin: 0 auto; padding: 8px max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px)); }
+    .hello { margin: 14px 0 4px; color: var(--ink-soft); }
+    .cat h2 { font: 400 1.6rem/1.1 var(--f-brush); color: var(--crimson); margin: 26px 0 8px; }
+    .item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 14px; align-items: center; padding: 14px 0; border-bottom: 1px dashed var(--line); }
+    .item h3 { margin: 0; font-size: 1.02rem; display: flex; gap: 8px; align-items: center; }
+    .item p { margin: 0; color: var(--ink-soft); font-size: .9rem; grid-column: 1; }
+    .item .price { font-weight: 600; font-variant-numeric: tabular-nums; grid-column: 1; }
+    .item .ctl { grid-column: 2; grid-row: 1 / span 3; }
+    .item.off { opacity: .5; }
+    .mark { flex: none; width: 14px; height: 14px; border: 1.5px solid var(--veg); border-radius: 2px; display: grid; place-items: center; }
+    .mark::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--veg); }
+    .mark.nv { border-color: var(--nonveg); }
+    .mark.nv::after { background: var(--nonveg); border-radius: 0; width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 7px solid var(--nonveg); background: none; }
+    .add { min-width: 84px; padding: 9px 16px; border-radius: 12px; border: 1.5px solid var(--crimson); background: var(--paper); color: var(--crimson); font-weight: 600; }
+    .step { display: inline-flex; align-items: center; border-radius: 12px; background: var(--crimson); color: #fff; }
+    .step button { width: 36px; height: 38px; border: 0; background: transparent; color: #fff; font-size: 1.2rem; }
+    .step span { min-width: 22px; text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .soldout { font-size: .85rem; font-weight: 600; color: var(--ink-soft); }
+
+    .bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; padding: 12px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); background: linear-gradient(transparent, var(--cream) 30%); }
+    .bar button { display: flex; width: 100%; max-width: 728px; margin: 0 auto; align-items: center; justify-content: space-between; gap: 12px; padding: 15px 20px; border: 0; border-radius: 16px; background: var(--ink); color: var(--cream); font-weight: 600; box-shadow: 0 14px 30px -14px rgba(28,18,20,.6); }
+    .bar b { font-variant-numeric: tabular-nums; }
+
+    .sheet { position: fixed; inset: 0; z-index: 10; display: grid; align-items: end; background: rgba(28,18,20,.5); }
+    .sheet__card { background: var(--paper); border-radius: 22px 22px 0 0; max-height: 92vh; overflow: auto; padding: 20px max(18px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px)); width: 100%; max-width: 760px; margin: 0 auto; display: grid; gap: 14px; }
+    .sheet h2 { margin: 0; font: 900 1.6rem/1 var(--f-display); text-transform: uppercase; }
+    .sheet__head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .x { border: 0; background: var(--cream); border-radius: 50%; width: 36px; height: 36px; font-size: 1.1rem; }
+    .lines { display: grid; gap: 10px; }
+    .line { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; }
+    .line .amt { font-variant-numeric: tabular-nums; min-width: 64px; text-align: right; }
+    .total { display: flex; justify-content: space-between; font-weight: 600; font-size: 1.1rem; border-top: 1px solid var(--line); padding-top: 12px; }
+    .total b { font-variant-numeric: tabular-nums; }
+    label.f { display: grid; gap: 6px; font-size: .88rem; font-weight: 600; color: var(--ink-soft); }
+    label.f input, label.f select { padding: 12px 14px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; }
+    .send { padding: 16px; border: 0; border-radius: 16px; background: var(--crimson); color: #fff; font-weight: 600; font-size: 1.05rem; }
+    .send:disabled { opacity: .6; }
+    .msg { margin: 0; font-size: .9rem; color: var(--ink-soft); }
+    .msg.err { color: var(--crimson); font-weight: 600; }
+    .trap { position: absolute; left: -9999px; }
+
+    .mine { margin: 18px 0 0; display: grid; gap: 12px; }
+    .ticket { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 16px; display: grid; gap: 10px; }
+    .ticket__head { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: baseline; }
+    .ticket__head b { font: 900 1.25rem/1 var(--f-display); letter-spacing: .04em; }
+    .ticket ul { margin: 0; padding: 0; list-style: none; color: var(--ink-soft); font-size: .92rem; }
+    .track { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+    .track span { font-size: .78rem; font-weight: 600; color: var(--ink-soft); padding-top: 8px; border-top: 4px solid var(--line); }
+    .track span.done { color: var(--ink); border-color: var(--crimson); }
+    .ticket.cancelled .track { display: none; }
+    .pill { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 3px 9px; border-radius: 999px; background: var(--cream); }
+    @media (prefers-reduced-motion: no-preference) { .sheet__card { animation: up .22s ease-out; } @keyframes up { from { transform: translateY(30px); opacity: 0; } } }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="top__row">
+      <img src="/img/brand/logo-104.png" alt="">
+      <h1>Order</h1>
+      <label class="table-chip">Table <select id="table" aria-label="Your table number"></select></label>
+    </div>
+    <nav class="tabs" id="tabs" aria-label="Menu sections"></nav>
+  </header>
+
+  <main>
+    <p class="hello" id="hello">Pick your dishes and send the order. We bring it to your table, and you pay at the counter when you're done.</p>
+    <section class="mine" id="mine" aria-label="Your orders" hidden></section>
+    <div id="menu"><p class="msg">Loading the menu...</p></div>
+  </main>
+
+  <div class="bar" id="bar" hidden><button type="button" id="openCart"><span id="barCount"></span><b id="barTotal"></b></button></div>
+
+  <div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <form class="sheet__card" id="cartForm" novalidate>
+      <div class="sheet__head"><h2 id="sheetTitle">Your order</h2><button class="x" type="button" id="closeCart" aria-label="Close">✕</button></div>
+      <div class="lines" id="lines"></div>
+      <div class="total"><span>Total</span><b id="sheetTotal"></b></div>
+      <label class="f">Your name (optional)<input id="name" maxlength="40" autocomplete="given-name" placeholder="So we know who it's for"></label>
+      <label class="f">Anything for the kitchen? (optional)<input id="note" maxlength="200" placeholder="Less spicy, no onion, extra egg..."></label>
+      <input class="trap" id="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <p class="msg" id="sendMsg" role="status" aria-live="polite">Pay at the counter when you're done.</p>
+      <button class="send" type="submit" id="send">Send order to the kitchen</button>
+    </form>
+  </div>
+
+  <script>
+  (() => {
+    const API = '/api';
+    const $ = (id) => document.getElementById(id);
+    const rupees = (n) => '₹' + n.toLocaleString('en-IN');
+    const cart = new Map();
+    let menu = { items: [], categories: [], tables: 12 }, byId = {};
+    const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+
+    // Table from the QR link (?table=5), remembered for the visit
+    const params = new URLSearchParams(location.search);
+    let table = params.get('table') || store.get('tokusTable', '');
+
+    function el(tag, props = {}, ...kids) { const n = document.createElement(tag); Object.assign(n, props); n.append(...kids); return n; }
+
+    function fillTables() {
+      const sel = $('table');
+      sel.replaceChildren(el('option', { value: '', textContent: '?' }), ...Array.from({ length: menu.tables }, (_, i) => el('option', { value: String(i + 1), textContent: String(i + 1) })));
+      sel.value = table;
+      sel.onchange = () => { table = sel.value; store.set('tokusTable', table); renderMine(); };
+    }
+
+    function control(item) {
+      if (item.soldOut) return el('span', { className: 'soldout', textContent: 'Sold out' });
+      const n = cart.get(item.id) || 0;
+      if (!n) return el('button', { type: 'button', className: 'add', textContent: 'Add', onclick: () => change(item.id, 1), ariaLabel: `Add ${item.name}` });
+      return el('span', { className: 'step' },
+        el('button', { type: 'button', textContent: '−', onclick: () => change(item.id, -1), ariaLabel: `One less ${item.name}` }),
+        el('span', { textContent: n, ariaLive: 'polite' }),
+        el('button', { type: 'button', textContent: '+', onclick: () => change(item.id, 1), ariaLabel: `One more ${item.name}` }));
+    }
+
+    function renderMenu() {
+      $('menu').replaceChildren(...menu.categories.map((c) => el('section', { className: 'cat', id: 'c-' + c.id },
+        el('h2', { textContent: c.name }),
+        ...menu.items.filter((m) => m.cat === c.id).map((m) => {
+          const row = el('div', { className: 'item' + (m.soldOut ? ' off' : '') },
+            el('h3', {}, el('span', { className: 'mark' + (m.veg ? '' : ' nv'), title: m.veg ? 'Vegetarian' : 'Non-vegetarian' }), m.name),
+            el('p', { textContent: m.desc }),
+            el('span', { className: 'price', textContent: rupees(m.price) }));
+          const ctl = el('div', { className: 'ctl' }, control(m)); ctl.dataset.id = m.id;
+          row.append(ctl);
+          return row;
+        }))));
+      $('tabs').replaceChildren(...menu.categories.map((c, i) => el('a', { href: '#c-' + c.id, textContent: c.name, className: i ? '' : 'on',
+        onclick: (e) => { e.preventDefault(); $('c-' + c.id).scrollIntoView({ behavior: 'smooth' }); } })));
+    }
+
+    function change(id, d) {
+      const n = Math.max(0, Math.min(20, (cart.get(id) || 0) + d));
+      if (n) cart.set(id, n); else cart.delete(id);
+      const ctl = document.querySelector(`.ctl[data-id="${id}"]`);
+      if (ctl) ctl.replaceChildren(control(byId[id]));
+      renderCart();
+    }
+
+    function totals() {
+      let count = 0, sum = 0;
+      cart.forEach((n, id) => { count += n; sum += n * byId[id].price; });
+      return { count, sum };
+    }
+
+    function renderCart() {
+      const { count, sum } = totals();
+      $('bar').hidden = !count;
+      $('barCount').textContent = `${count} ${count === 1 ? 'item' : 'items'} · View order`;
+      $('barTotal').textContent = rupees(sum);
+      $('sheetTotal').textContent = rupees(sum);
+      $('lines').replaceChildren(...[...cart].map(([id, n]) => {
+        const m = byId[id];
+        const step = el('span', { className: 'step' },
+          el('button', { type: 'button', textContent: '−', onclick: () => change(id, -1), ariaLabel: `One less ${m.name}` }),
+          el('span', { textContent: n }),
+          el('button', { type: 'button', textContent: '+', onclick: () => change(id, 1), ariaLabel: `One more ${m.name}` }));
+        return el('div', { className: 'line' }, el('span', { textContent: m.name }), step, el('span', { className: 'amt', textContent: rupees(n * m.price) }));
+      }));
+      if (!count && !$('sheet').hidden) closeSheet();
+    }
+
+    function openSheet() { $('sheet').hidden = false; $('send').focus(); }
+    function closeSheet() { $('sheet').hidden = true; $('openCart').focus(); }
+    $('openCart').onclick = openSheet;
+    $('closeCart').onclick = closeSheet;
+    $('sheet').addEventListener('click', (e) => { if (e.target === $('sheet')) closeSheet(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('sheet').hidden) closeSheet(); });
+
+    $('cartForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = $('sendMsg');
+      if (!table) { msg.textContent = 'Pick your table number at the top first. It is on the card on your table.'; msg.className = 'msg err'; $('table').focus(); return; }
+      $('send').disabled = true; msg.className = 'msg'; msg.textContent = 'Sending...';
+      try {
+        const res = await fetch(API + '/order', { method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ table, name: $('name').value, note: $('note').value, website: $('website').value, items: [...cart].map(([id, qty]) => ({ id, qty })) }) });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+          const mine = store.get('tokusOrders', []).filter((o) => o.day === today());
+          mine.push({ code: data.code, table, day: today() });
+          store.set('tokusOrders', mine);
+          cart.clear(); renderMenu(); renderCart(); $('note').value = '';
+          closeSheet(); msg.textContent = "Pay at the counter when you're done.";
+          await renderMine(); window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
+        msg.textContent = data.message || 'That did not go through. Please try again, or tell a staff member.'; msg.className = 'msg err';
+        if (data.error === 'sold_out') { (data.soldOut || []).forEach((id) => cart.delete(id)); await loadMenu(); }
+        if (data.error === 'table') $('table').focus();
+      } catch {
+        msg.textContent = 'No connection. Check your internet and try again, or tell a staff member.'; msg.className = 'msg err';
+      } finally { $('send').disabled = false; }
+    });
+
+    const today = () => { const d = new Date(Date.now() + 330 * 60000); return d.toISOString().slice(0, 10); };
+    const STEPS = [['new', 'Received'], ['preparing', 'Being made'], ['served', 'Served']];
+    const RANK = { new: 0, preparing: 1, served: 2, paid: 2 };
+
+    async function renderMine() {
+      const mine = store.get('tokusOrders', []).filter((o) => o.day === today() && (!table || o.table === table));
+      $('mine').hidden = !mine.length;
+      if (!mine.length) return;
+      const cards = await Promise.all(mine.slice().reverse().map(async (o) => {
+        try {
+          const r = await fetch(`${API}/order?code=${encodeURIComponent(o.code)}`); const d = await r.json();
+          if (!d.ok) return null;
+          const rank = RANK[d.status];
+          const label = d.status === 'cancelled' ? 'Cancelled' : d.status === 'paid' ? 'Paid' : STEPS[rank][1];
+          return el('article', { className: 'ticket ' + d.status },
+            el('div', { className: 'ticket__head' }, el('b', { textContent: `Order ${d.code}` }), el('span', { className: 'pill', textContent: label })),
+            el('div', { className: 'track' }, ...STEPS.map(([, name], i) => el('span', { className: i <= rank ? 'done' : '', textContent: name }))),
+            el('ul', {}, ...d.items.map((i) => el('li', { textContent: `${i.qty} × ${i.name}` }))),
+            el('div', { className: 'total' }, el('span', { textContent: 'Total' }), el('b', { textContent: rupees(d.total) })));
+        } catch { return null; }
+      }));
+      $('mine').replaceChildren(el('h2', { className: 'msg', textContent: 'Your orders today' }), ...cards.filter(Boolean));
+    }
+
+    async function loadMenu() {
+      try {
+        const res = await fetch(API + '/menu'); menu = await res.json();
+        byId = Object.fromEntries(menu.items.map((m) => [m.id, m]));
+        [...cart.keys()].forEach((id) => { if (!byId[id] || byId[id].soldOut) cart.delete(id); });
+        fillTables(); renderMenu(); renderCart();
+      } catch {
+        $('menu').replaceChildren(el('p', { className: 'msg err', textContent: 'The menu could not load. Check your internet and refresh, or ask a staff member to take your order.' }));
+      }
+    }
+
+    // Highlight the section tab you're scrolled to
+    addEventListener('scroll', () => {
+      let on = null;
+      document.querySelectorAll('.cat').forEach((s) => { if (s.getBoundingClientRect().top < 140) on = s.id; });
+      document.querySelectorAll('.tabs a').forEach((a, i) => a.classList.toggle('on', on ? a.getAttribute('href') === '#' + on : i === 0));
+    }, { passive: true });
+
+    if (params.get('table')) store.set('tokusTable', table);
+    loadMenu().then(renderMine);
+    setInterval(() => { if (!document.hidden) renderMine(); }, 15000);
+  })();
+  </script>
+</body>
+</html>

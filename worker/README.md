@@ -1,4 +1,4 @@
-# Book your seat: how it runs
+# Bookings and table orders: how it runs
 
 The site now runs as one Cloudflare Worker. It serves the static pages as before, and answers the booking API at `/api/*`. Bookings are stored in a Cloudflare D1 database. Everything fits in Cloudflare's free plan.
 
@@ -8,7 +8,23 @@ The site now runs as one Cloudflare Worker. It serves the static pages as before
 - Staff open `/staff/` with a PIN to see the day's bookings, mark arrived / no-show / cancelled, and add phone or walk-in bookings.
 - If the API can't be reached, or the group is 9 or more, the form falls back to the prefilled WhatsApp message.
 
-Rules (hours, seats per slot, biggest group, how far ahead) live in `worker/config.js`.
+Rules (hours, seats per slot, biggest group, how far ahead, number of tables) live in `worker/config.js`.
+
+## Table orders
+
+- Each table has a QR card linking to `/order/?table=N`. Print the cards from `/staff/qr.html` (also linked from the staff Menu tab).
+- Guests pick dishes, add a note, and send the order. They see it go from Received to Being made to Served on their phone, and pay at the counter.
+- Staff see orders on the Orders tab of `/staff/`: New, Preparing, Served. Tap a table chip to see that table's bill and mark it paid.
+- The Menu tab marks dishes sold out for the day.
+- Dishes, categories and prices live in `worker/menu.js`. Prices are worked out on the server, so a guest can't change them.
+- New orders go to the staff Telegram group once Telegram is set up.
+
+After pulling these changes into a site that is already live, run the database setup once more (it only adds the new tables) and deploy:
+
+```
+npx wrangler d1 execute tokus-bookings --remote --file=worker/schema.sql
+npx wrangler deploy
+```
 
 ## One-time setup
 
