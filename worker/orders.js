@@ -6,6 +6,32 @@ import { json, fail, isDate, clean, newCode, readBody } from './util.js';
 const STATUSES = ['new', 'preparing', 'served', 'paid', 'cancelled'];
 const tableNames = () => Array.from({ length: CONFIG.tables }, (_, i) => String(i + 1));
 
+// Where an order can move next. Each step back is there so staff can undo a mis-tap.
+const NEXT = {
+  new: ['preparing', 'cancelled', 'paid'],
+  preparing: ['served', 'cancelled', 'new', 'paid'],
+  served: ['paid', 'cancelled', 'preparing'],
+  paid: ['served'],
+  cancelled: ['served', 'new'],
+};
+
+// Each table's QR link carries a key made from the TABLE_SECRET secret, so only someone who scanned
+// the card on the table can order for it. With no TABLE_SECRET set, orders work without keys.
+export async function tableKey(env, table) {
+  const enc = new TextEncoder();
+  const k = await crypto.subtle.importKey('raw', enc.encode(env.TABLE_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = new Uint8Array(await crypto.subtle.sign('HMAC', k, enc.encode('table:' + table)));
+  const abc = 'abcdefghjkmnpqrstuvwxyz23456789';
+  return [...sig.slice(0, 10)].map((x) => abc[x % abc.length]).join('');
+}
+
+export async function tableLinks(env) {
+  const tables = await Promise.all(tableNames().map(async (t) => ({
+    table: t, path: `/order/?table=${t}` + (env.TABLE_SECRET ? `&k=${await tableKey(env, t)}` : ''),
+  })));
+  return json({ ok: true, keyed: !!env.TABLE_SECRET, tables });
+}
+
 async function soldOutIds(env) {
   const { results } = await env.DB.prepare('SELECT item_id FROM sold_out').all();
   return new Set(results.map((r) => r.item_id));
@@ -27,6 +53,9 @@ async function readOrder(env, body) {
   const table = String(body.table ?? '').trim();
   if (!tableNames().includes(table)) {
     return { error: fail('table', 'Pick your table number. It is on the QR code card on your table.') };
+  }
+  if (env.TABLE_SECRET && String(body.key || '') !== (await tableKey(env, table))) {
+    return { error: fail('table_key', 'Please scan the QR code on your table to order. If it still does not work, ask a staff member.', 403) };
   }
   const off = await soldOutIds(env);
   const qty = new Map();
@@ -66,7 +95,7 @@ export async function placeOrder(env, request) {
   if (error) return { response: error };
   const day = nowLocal().date;
   for (let attempt = 0; attempt < 3; attempt++) {
-    order.code = newCode('OD-', 4);
+    order.code = newCode('OD-', 6);
     try {
       // One batch runs as one transaction: the order and its dishes are saved together or not at all
       await env.DB.batch([
@@ -84,13 +113,16 @@ export async function placeOrder(env, request) {
   throw new Error('could not make an order code');
 }
 
+// D1 allows at most 100 bound values in one query, so a busy day's orders are fetched in chunks
 async function itemsFor(env, ids) {
-  if (!ids.length) return {};
-  const { results } = await env.DB.prepare(
-    `SELECT order_id, item_id, name, price, qty FROM order_items WHERE order_id IN (${ids.map(() => '?').join(',')})`
-  ).bind(...ids).all();
   const by = {};
-  results.forEach((r) => (by[r.order_id] ||= []).push({ id: r.item_id, name: r.name, price: r.price, qty: r.qty }));
+  for (let i = 0; i < ids.length; i += 90) {
+    const chunk = ids.slice(i, i + 90);
+    const { results } = await env.DB.prepare(
+      `SELECT order_id, item_id, name, price, qty FROM order_items WHERE order_id IN (${chunk.map(() => '?').join(',')})`
+    ).bind(...chunk).all();
+    results.forEach((r) => (by[r.order_id] ||= []).push({ id: r.item_id, name: r.name, price: r.price, qty: r.qty }));
+  }
   return by;
 }
 
@@ -124,8 +156,14 @@ export async function staffOrders(env, url) {
 export async function setOrderStatus(env, request) {
   const body = await readBody(request);
   if (!body || !STATUSES.includes(body.status)) return fail('status', 'Unknown status.');
-  const res = await env.DB.prepare("UPDATE orders SET status = ?, updated_at = datetime('now') WHERE id = ?").bind(body.status, +body.id).run();
-  return res.meta.changes ? json({ ok: true }) : fail('missing', 'No such order.', 404);
+  if (!Number.isInteger(+body.id)) return fail('missing', 'No such order.', 404);
+  const from = Object.keys(NEXT).filter((s) => NEXT[s].includes(body.status));
+  const res = await env.DB.prepare(
+    `UPDATE orders SET status = ?, updated_at = datetime('now') WHERE id = ? AND status IN (${from.map(() => '?').join(',')})`
+  ).bind(body.status, +body.id, ...from).run();
+  if (res.meta.changes) return json({ ok: true });
+  const o = await env.DB.prepare('SELECT status FROM orders WHERE id = ?').bind(+body.id).first();
+  return o ? fail('status', `This order is already ${o.status}. Refresh to see the latest.`, 409) : fail('missing', 'No such order.', 404);
 }
 
 export async function setSoldOut(env, request) {

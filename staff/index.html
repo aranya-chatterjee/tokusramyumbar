@@ -259,7 +259,11 @@
 
     async function setStatus(b, status) {
       if (status === 'cancelled' && !confirm(`Cancel ${b.name}'s booking for ${b.label}?`)) return;
-      await call('/status', { method: 'POST', body: JSON.stringify({ id: b.id, status }) });
+      let { data } = await call('/status', { method: 'POST', body: JSON.stringify({ id: b.id, status }) });
+      if (data.error === 'full' && confirm(`${data.message} Go over capacity anyway?`)) {
+        ({ data } = await call('/status', { method: 'POST', body: JSON.stringify({ id: b.id, status, force: true }) }));
+      }
+      if (!data.ok && data.error !== 'full') alert(data.message || 'That did not save. Try again.');
       loadBookings();
     }
 
@@ -385,7 +389,8 @@
 
     async function setOrder(o, status) {
       if (status === 'cancelled' && !confirm(`Cancel order ${o.code} for ${tableName(o.table_no)}?`)) return;
-      await call('/order-status', { method: 'POST', body: JSON.stringify({ id: o.id, status }) });
+      const { data } = await call('/order-status', { method: 'POST', body: JSON.stringify({ id: o.id, status }) });
+      if (!data.ok) alert(data.message || 'That did not save. Try again.');
       loadOrders();
     }
 

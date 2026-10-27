@@ -1,0 +1,13 @@
+# Response headers for the static pages (Cloudflare Workers static assets)
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+/staff/*
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-store
+
+/order/*
+  X-Robots-Tag: noindex

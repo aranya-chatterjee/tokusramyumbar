@@ -47,4 +47,5 @@ export const MENU = [
   { id: 'water', cat: 'drinks', name: 'Mineral Water', price: 30, veg: true, desc: '1 litre bottle.' },
 ];
 
-export const MENU_BY_ID = Object.fromEntries(MENU.map((m) => [m.id, m]));
+// Null prototype, so ids like "constructor" or "__proto__" are not found as dishes
+export const MENU_BY_ID = Object.assign(Object.create(null), Object.fromEntries(MENU.map((m) => [m.id, m])));

@@ -14,6 +14,15 @@ export function newCode(prefix, length = 5) {
   return prefix + [...bytes].map((x) => abc[x % abc.length]).join('');
 }
 
+// JSON only: a plain cross-site form post can't send this content type, so other sites can't book or order for a visitor
 export async function readBody(request) {
+  if (!(request.headers.get('content-type') || '').includes('application/json')) return null;
   try { return await request.json(); } catch { return null; }
+}
+
+// Cloudflare rate limit binding (see wrangler.toml). True when this caller is over the limit; never blocks if the binding is missing.
+export async function overLimit(limiter, request, scope) {
+  if (!limiter) return false;
+  const ip = request.headers.get('cf-connecting-ip') || 'local';
+  try { return !(await limiter.limit({ key: `${scope}:${ip}` })).success; } catch { return false; }
 }

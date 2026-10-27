@@ -7,3 +7,5 @@ wrangler.toml
 .dev.vars
 README.md
 screenshots
+.gitignore
+.DS_Store

@@ -9,8 +9,12 @@
     @font-face { font-family: 'Shojumaru'; src: url('/fonts/shojumaru-400.woff2') format('woff2'); }
     @font-face { font-family: 'Outfit'; font-weight: 600; src: url('/fonts/outfit-600.woff2') format('woff2'); }
     * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
     body { margin: 0; padding: 24px 16px; background: #f3ece8; color: #1c1214; font: 15px/1.4 'Outfit', system-ui, sans-serif; }
     .note { max-width: 760px; margin: 0 auto 20px; display: flex; gap: 12px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+    .note form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .note input { font: inherit; padding: 9px 12px; border: 1px solid #b9a9ac; border-radius: 10px; }
+    .warn { color: #b8143a; font-weight: 600; }
     .note button { font: inherit; font-weight: 600; padding: 10px 18px; border: 0; border-radius: 10px; background: #b8143a; color: #fff; cursor: pointer; }
     .sheet { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; max-width: 760px; margin: 0 auto; }
     .card { background: #fffaf6; border: 2px solid #1c1214; border-radius: 18px; padding: 18px; display: grid; justify-items: center; gap: 8px; text-align: center; break-inside: avoid; }
@@ -23,21 +27,40 @@
   </style>
 </head>
 <body>
-  <div class="note">
-    <span>Print this page and put each card on its table. Guests scan it to order.</span>
+  <div class="note" id="login">
+    <form id="pinForm">
+      <label for="pin">Staff PIN</label>
+      <input id="pin" type="password" autocomplete="current-password" required>
+      <button type="submit">Show QR codes</button>
+    </form>
+    <span id="msg" class="warn"></span>
+  </div>
+  <div class="note" id="ready" hidden>
+    <span>Print this page and put each card on its table. Guests scan it to order. Reprint all cards if TABLE_SECRET changes: old cards stop working.</span>
     <button type="button" onclick="print()">Print</button>
   </div>
   <div class="sheet" id="sheet"></div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script>
-    fetch('/api/menu').then((r) => r.json()).then(({ tables }) => {
-      for (let t = 1; t <= tables; t++) {
+    // The QR links carry each table's secret key, so they come from the staff API
+    const $ = (id) => document.getElementById(id);
+    async function show(pin) {
+      const res = await fetch('/api/staff/table-links', { headers: { authorization: 'Bearer ' + pin } });
+      const data = await res.json().catch(() => ({}));
+      if (!data.ok) { $('msg').textContent = res.status === 401 ? 'That PIN did not work.' : (data.message || 'Could not load the tables.'); return; }
+      try { sessionStorage.setItem('tokusPin', pin); } catch {}
+      $('login').hidden = true; $('ready').hidden = false;
+      if (!data.keyed) $('ready').querySelector('span').textContent = 'Print this page and put each card on its table. Guests scan it to order. These cards never need replacing.';
+      $('sheet').replaceChildren();
+      for (const { table, path } of data.tables) {
         const card = document.createElement('div'); card.className = 'card';
-        card.innerHTML = `<img class="logo" src="/img/brand/logo-104.png" alt=""><h2>Table ${t}</h2><div class="qr"></div><p>Scan to order</p><small>Pay at the counter when you're done</small>`;
-        document.getElementById('sheet').append(card);
-        new QRCode(card.querySelector('.qr'), { text: `${location.origin}/order/?table=${t}`, width: 150, height: 150, correctLevel: QRCode.CorrectLevel.M });
+        card.innerHTML = `<img class="logo" src="/img/brand/logo-104.png" alt=""><h2>Table ${table}</h2><div class="qr"></div><p>Scan to order</p><small>Pay at the counter when you're done</small>`;
+        $('sheet').append(card);
+        new QRCode(card.querySelector('.qr'), { text: location.origin + path, width: 150, height: 150, correctLevel: QRCode.CorrectLevel.M });
       }
-    });
+    }
+    $('pinForm').addEventListener('submit', (e) => { e.preventDefault(); show($('pin').value); });
+    try { const saved = sessionStorage.getItem('tokusPin'); if (saved) show(saved); } catch {}
   </script>
 </body>
 </html>

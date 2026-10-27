@@ -33,6 +33,7 @@
     .table-chip { display: flex; align-items: center; gap: 6px; background: var(--crimson); color: #fff; border: 0; border-radius: 999px; padding: 7px 14px; font-weight: 600; }
     .table-chip select { background: transparent; border: 0; color: #fff; font-weight: 600; padding: 0; }
     .table-chip select option { color: var(--ink); }
+    .table-chip select:disabled { opacity: 1; -webkit-appearance: none; appearance: none; }
     .tabs { display: flex; gap: 6px; overflow-x: auto; max-width: 760px; margin: 10px auto 0; padding-bottom: 10px; scrollbar-width: none; }
     .tabs::-webkit-scrollbar { display: none; }
     .tabs a { flex: none; padding: 7px 14px; border-radius: 999px; color: var(--cream); text-decoration: none; border: 1px solid rgba(251,238,228,.25); font-weight: 600; font-size: .92rem; }
@@ -135,6 +136,8 @@
     // Table from the QR link (?table=5), remembered for the visit
     const params = new URLSearchParams(location.search);
     let table = params.get('table') || store.get('tokusTable', '');
+    // The key printed in the table's QR link; it has to match the table, so a new QR scan replaces it
+    let key = params.get('table') ? params.get('k') || '' : store.get('tokusKey', '');
 
     function el(tag, props = {}, ...kids) { const n = document.createElement(tag); Object.assign(n, props); n.append(...kids); return n; }
 
@@ -142,6 +145,7 @@
       const sel = $('table');
       sel.replaceChildren(el('option', { value: '', textContent: '?' }), ...Array.from({ length: menu.tables }, (_, i) => el('option', { value: String(i + 1), textContent: String(i + 1) })));
       sel.value = table;
+      sel.disabled = !!(key && table); // the QR card fixed the table
       sel.onchange = () => { table = sel.value; store.set('tokusTable', table); renderMine(); };
     }
 
@@ -216,7 +220,7 @@
       $('send').disabled = true; msg.className = 'msg'; msg.textContent = 'Sending...';
       try {
         const res = await fetch(API + '/order', { method: 'POST', headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ table, name: $('name').value, note: $('note').value, website: $('website').value, items: [...cart].map(([id, qty]) => ({ id, qty })) }) });
+          body: JSON.stringify({ table, key, name: $('name').value, note: $('note').value, website: $('website').value, items: [...cart].map(([id, qty]) => ({ id, qty })) }) });
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.ok) {
           const mine = store.get('tokusOrders', []).filter((o) => o.day === today());
@@ -230,6 +234,7 @@
         msg.textContent = data.message || 'That did not go through. Please try again, or tell a staff member.'; msg.className = 'msg err';
         if (data.error === 'sold_out') { (data.soldOut || []).forEach((id) => cart.delete(id)); await loadMenu(); }
         if (data.error === 'table') $('table').focus();
+        if (data.error === 'table_key') { key = ''; store.set('tokusKey', ''); }
       } catch {
         msg.textContent = 'No connection. Check your internet and try again, or tell a staff member.'; msg.className = 'msg err';
       } finally { $('send').disabled = false; }
@@ -277,7 +282,7 @@
       document.querySelectorAll('.tabs a').forEach((a, i) => a.classList.toggle('on', on ? a.getAttribute('href') === '#' + on : i === 0));
     }, { passive: true });
 
-    if (params.get('table')) store.set('tokusTable', table);
+    if (params.get('table')) { store.set('tokusTable', table); store.set('tokusKey', key); }
     loadMenu().then(renderMine);
     setInterval(() => { if (!document.hidden) renderMine(); }, 15000);
   })();

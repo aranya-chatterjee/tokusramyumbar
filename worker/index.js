@@ -1,7 +1,7 @@
 // Toku's booking API. Static files are served from the repo root; only /api/* reaches this code.
 import { CONFIG, slotTimes, slotLabel, nowLocal, addDays } from './config.js';
 import { notifyStaff, notifyOrder } from './notify.js';
-import { json, fail, isDate, clean, newCode, readBody } from './util.js';
+import { json, fail, isDate, clean, newCode, readBody, overLimit } from './util.js';
 import * as orders from './orders.js';
 
 const ACTIVE = "status IN ('confirmed', 'arrived')";
@@ -12,6 +12,7 @@ function normalisePhone(raw) {
   let d = String(raw ?? '').replace(/\D/g, '');
   if (d.length === 11 && d.startsWith('0')) d = d.slice(1);
   if (d.length === 10) d = '91' + d;
+  if (d.startsWith('91') && d.length === 12 && !/^91[6-9]/.test(d)) return null; // Indian mobiles start with 6 to 9
   return d.length >= 11 && d.length <= 13 ? d : null;
 }
 
@@ -47,17 +48,21 @@ async function getSlots(env, url) {
   return json({ ...base, slots });
 }
 
-// Inserts only if the slot still has room, in one statement, so two guests can't take the last seats at once
-async function insertBooking(env, b, enforceCapacity) {
+// Inserts only if the slot still has room, in one statement, so two guests can't take the last seats at once.
+// Web bookings also check, in the same statement, that the phone has no booking at this time and is under its limit.
+async function insertBooking(env, b, enforceCapacity, today = null) {
   const cap = enforceCapacity ? CONFIG.seatsPerSlot : 1e9;
+  const guestRules = today ? `
+           AND NOT EXISTS (SELECT 1 FROM bookings WHERE phone = ?3 AND date = ?4 AND slot = ?5 AND status = 'confirmed')
+           AND (SELECT COUNT(*) FROM bookings WHERE phone = ?3 AND date >= ?10 AND status = 'confirmed') < ?11` : '';
   for (let attempt = 0; attempt < 3; attempt++) {
     b.code = newCode('TK-');
     try {
       const res = await env.DB.prepare(
         `INSERT INTO bookings (code, name, phone, date, slot, guests, note, source)
          SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8
-         WHERE (SELECT COALESCE(SUM(guests), 0) FROM bookings WHERE date = ?4 AND slot = ?5 AND ${ACTIVE}) + ?6 <= ?9`
-      ).bind(b.code, b.name, b.phone, b.date, b.slot, b.guests, b.note, b.source, cap).run();
+         WHERE (SELECT COALESCE(SUM(guests), 0) FROM bookings WHERE date = ?4 AND slot = ?5 AND ${ACTIVE}) + ?6 <= ?9${guestRules}`
+      ).bind(b.code, b.name, b.phone, b.date, b.slot, b.guests, b.note, b.source, cap, ...(today ? [today, CONFIG.maxActivePerPhone] : [])).run();
       return res.meta.changes === 1;
     } catch (e) {
       if (!String(e).includes('UNIQUE')) throw e; // code clash: try another code
@@ -91,6 +96,7 @@ function readBooking(body, { staff }) {
 }
 
 async function createBooking(env, request, ctx) {
+  if (await overLimit(env.BOOK_LIMIT, request, 'book')) return fail('busy', 'Too many tries. Please wait a minute and try again.', 429);
   const body = await readBody(request);
   if (body && body.website) return json({ ok: true, code: 'TK-THANKS' }); // honeypot field filled in: a bot
   const { b, error } = readBooking(body, { staff: false });
@@ -100,14 +106,20 @@ async function createBooking(env, request, ctx) {
   if (b.date === now.date && toMin(b.slot) < now.minutes + CONFIG.leadMinutes) {
     return fail('time', 'That time is too soon to book online. Please call us.');
   }
-  const { n } = await env.DB.prepare(
-    `SELECT COUNT(*) AS n FROM bookings WHERE phone = ? AND date >= ? AND status = 'confirmed'`
-  ).bind(b.phone, now.date).first();
-  if (n >= CONFIG.maxActivePerPhone) {
-    return fail('limit', 'This number already has several upcoming bookings. Please call us to add more.', 429);
-  }
-
-  if (!(await insertBooking(env, b, true))) {
+  if (!(await insertBooking(env, b, true, now.date))) {
+    // Work out which rule stopped it
+    const same = await env.DB.prepare(
+      `SELECT code FROM bookings WHERE phone = ? AND date = ? AND slot = ? AND status = 'confirmed' LIMIT 1`
+    ).bind(b.phone, b.date, b.slot).first();
+    if (same) { // the same guest pressed Book twice: hand back the booking they already have
+      return json({ ok: true, code: same.code, name: b.name, date: b.date, time: b.slot, label: slotLabel(b.slot), guests: b.guests, repeat: true });
+    }
+    const { n } = await env.DB.prepare(
+      `SELECT COUNT(*) AS n FROM bookings WHERE phone = ? AND date >= ? AND status = 'confirmed'`
+    ).bind(b.phone, now.date).first();
+    if (n >= CONFIG.maxActivePerPhone) {
+      return fail('limit', 'This number already has several upcoming bookings. Please call us to add more.', 429);
+    }
     const left = Math.max(0, CONFIG.seatsPerSlot - ((await seatsTaken(env, b.date))[b.slot] || 0));
     return fail('full', left ? `Only ${left} ${left === 1 ? 'seat is' : 'seats are'} left at ${slotLabel(b.slot)}.` : `${slotLabel(b.slot)} is fully booked. Try another time.`, 409, { left });
   }
@@ -142,8 +154,19 @@ async function staffSetStatus(env, request) {
   const body = await readBody(request);
   const status = body && body.status;
   if (!['confirmed', 'arrived', 'no_show', 'cancelled'].includes(status)) return fail('status', 'Unknown status.');
-  const res = await env.DB.prepare('UPDATE bookings SET status = ? WHERE id = ?').bind(status, +body.id).run();
-  return res.meta.changes ? json({ ok: true }) : fail('missing', 'No such booking.', 404);
+  if (!Number.isInteger(+body.id)) return fail('missing', 'No such booking.', 404);
+  const bk = await env.DB.prepare('SELECT date, slot, guests, status FROM bookings WHERE id = ?').bind(+body.id).first();
+  if (!bk) return fail('missing', 'No such booking.', 404);
+  // Bringing back a cancelled or no-show booking takes seats again: warn if the slot would go over
+  const active = (s) => s === 'confirmed' || s === 'arrived';
+  if (active(status) && !active(bk.status) && !body.force) {
+    const taken = (await seatsTaken(env, bk.date))[bk.slot] || 0;
+    if (taken + bk.guests > CONFIG.seatsPerSlot) {
+      return fail('full', `${slotLabel(bk.slot)} would have ${taken + bk.guests} of ${CONFIG.seatsPerSlot} seats taken.`, 409);
+    }
+  }
+  await env.DB.prepare('UPDATE bookings SET status = ? WHERE id = ?').bind(status, +body.id).run();
+  return json({ ok: true });
 }
 
 async function staffAdd(env, request) {
@@ -165,6 +188,7 @@ export default {
         case 'POST /api/book': return await createBooking(env, request, ctx);
         case 'GET /api/menu': return await orders.getMenu(env);
         case 'POST /api/order': {
+          if (await overLimit(env.ORDER_LIMIT, request, 'order')) return fail('busy', 'Too many orders from this connection. Please ask a staff member.', 429);
           const res = await orders.placeOrder(env, request);
           if (res.order) ctx.waitUntil(notifyOrder(env, res.order));
           return res.response;
@@ -172,6 +196,8 @@ export default {
         case 'GET /api/order': return await orders.orderStatus(env, url);
       }
       if (url.pathname.startsWith('/api/staff/')) {
+        // Every staff call counts, right PIN or wrong, so nobody can try PINs faster than this
+        if (await overLimit(env.STAFF_LIMIT, request, 'staff')) return fail('busy', 'Too many tries. Wait a minute.', 429);
         if (!staffAllowed(env, request)) return fail('pin', 'Wrong staff PIN.', 401);
         switch (route) {
           case 'GET /api/staff/bookings': return await staffList(env, url);
@@ -180,6 +206,7 @@ export default {
           case 'GET /api/staff/orders': return await orders.staffOrders(env, url);
           case 'POST /api/staff/order-status': return await orders.setOrderStatus(env, request);
           case 'POST /api/staff/sold-out': return await orders.setSoldOut(env, request);
+          case 'GET /api/staff/table-links': return await orders.tableLinks(env);
         }
       }
       if (url.pathname.startsWith('/api/')) return fail('not_found', 'Not found.', 404);

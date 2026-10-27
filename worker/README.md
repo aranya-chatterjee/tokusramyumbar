@@ -35,6 +35,7 @@ npx wrangler login
 npx wrangler d1 create tokus-bookings          # copy the database_id it prints into wrangler.toml
 npx wrangler d1 execute tokus-bookings --remote --file=worker/schema.sql
 npx wrangler secret put STAFF_PIN              # a long passphrase, not 1234
+npx wrangler secret put TABLE_SECRET           # long random text; then print the cards from /staff/qr.html
 ```
 
 Telegram alerts (optional):

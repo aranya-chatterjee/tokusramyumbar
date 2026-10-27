@@ -7,12 +7,31 @@ compatibility_date = "2025-09-01"
 [assets]
 directory = "."
 binding = "ASSETS"
-not_found_handling = "none"
+not_found_handling = "404-page"  # serves 404.html for unknown pages
 
 [[d1_databases]]
 binding = "DB"
 database_name = "tokus-bookings"
 database_id = "4b143b4e-80da-4eb7-8d23-ecfa1dba89c7"
+
+# Rate limits per visitor IP (Cloudflare Workers rate limiting, free). The code skips a limit if its block is removed.
+# Staff page calls (and PIN guesses): 60 a minute. The staff page uses about 6 a minute per open device.
+[[ratelimits]]
+name = "STAFF_LIMIT"
+namespace_id = "1001"
+simple = { limit = 60, period = 60 }
+
+# Online bookings: 6 a minute
+[[ratelimits]]
+name = "BOOK_LIMIT"
+namespace_id = "1002"
+simple = { limit = 6, period = 60 }
+
+# Table orders: 30 a minute (guests on the restaurant wifi share one IP)
+[[ratelimits]]
+name = "ORDER_LIMIT"
+namespace_id = "1003"
+simple = { limit = 30, period = 60 }
 
 # Staff email alerts through Cloudflare Email Routing. Turn on Email Routing first,
 # verify the staff inbox as a destination address, then remove the # from the next two lines.
@@ -25,5 +44,6 @@ ALERT_TO = ""
 
 # Secrets (set with `npx wrangler secret put NAME`, never written here):
 #   STAFF_PIN            passphrase for the /staff/ page
+#   TABLE_SECRET         any long random text; makes the table QR keys (reprint QR cards if it changes)
 #   TELEGRAM_BOT_TOKEN   from @BotFather
 #   TELEGRAM_CHAT_ID     the staff group's chat id
