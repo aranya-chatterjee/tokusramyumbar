@@ -2,9 +2,9 @@
 // Keep each id the same once orders exist; change name, desc and price freely.
 export const CATEGORIES = [
   { id: 'ramen', name: 'Ramen' },
-  { id: 'plates', name: 'Plates' },
-  { id: 'desserts', name: 'Desserts' },
+  { id: 'plates', name: 'Add ons' },
   { id: 'drinks', name: 'Beverages' },
+  { id: 'desserts', name: 'Desserts' },
 ];
 
 export const MENU = [

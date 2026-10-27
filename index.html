@@ -159,7 +159,8 @@
         <h2 class="title"><span class="title__plain">Customers'</span> <span class="title__brush">favourites</span></h2>
         <div class="tabs" role="tablist" aria-label="Menu categories">
           <button role="tab" aria-selected="true" aria-controls="tab-ramen" id="t-ramen" class="tab">Ramen</button>
-          <button role="tab" aria-selected="false" aria-controls="tab-plates" id="t-plates" class="tab" tabindex="-1">Small plates</button>
+          <button role="tab" aria-selected="false" aria-controls="tab-plates" id="t-plates" class="tab" tabindex="-1">Add ons</button>
+          <button role="tab" aria-selected="false" aria-controls="tab-drinks" id="t-drinks" class="tab" tabindex="-1">Beverages</button>
           <button role="tab" aria-selected="false" aria-controls="tab-desserts" id="t-desserts" class="tab" tabindex="-1">Desserts</button>
         </div>
       </div>
@@ -167,8 +168,8 @@
       <div class="menu__grid">
         <figure class="menu__feature reveal">
           <div class="menu__plate">
-            <img src="img/bowl.jpg" alt="" width="1364" height="812" loading="lazy">
-            <span class="menu__glyph" lang="ko" hidden></span>
+            <img src="img/bowl.jpg" alt="" width="1364" height="812" loading="lazy" hidden>
+            <span class="menu__glyph is-alt" lang="ko">라볶이</span>
           </div>
           <figcaption>
             <span class="menu__feature-name">Rabokki</span>
@@ -179,7 +180,7 @@
         <div class="menu__lists">
           <ul class="dishes" id="tab-ramen" role="tabpanel" aria-labelledby="t-ramen">
             <li class="dish">
-              <span class="dish__img dish__img--photo"><img src="img/bowl.jpg" alt="" width="1364" height="812" loading="lazy"></span>
+              <span class="dish__img dish__img--alt" lang="ko">라볶이</span>
               <div class="dish__body"><h3>Rabokki</h3><p>Ramen and rice cakes in one sweet-spicy bowl.</p></div>
             </li>
             <li class="dish">
@@ -255,6 +256,36 @@
             <li class="dish">
               <span class="dish__img" lang="ko">잡채</span>
               <div class="dish__body"><h3>Japchae</h3><p>Glass noodles tossed with vegetables and sesame.</p></div>
+            </li>
+          </ul>
+          <ul class="dishes" id="tab-drinks" role="tabpanel" aria-labelledby="t-drinks" hidden>
+            <li class="dish">
+              <span class="dish__img dish__img--alt" lang="ko">바나나</span>
+              <div class="dish__body"><h3>Banana Milk</h3><p>The Korean classic, served chilled.</p></div>
+            </li>
+            <li class="dish">
+              <span class="dish__img" lang="ko">복숭아</span>
+              <div class="dish__body"><h3>Peach Iced Tea</h3><p>Sweet, cold and fizz-free.</p></div>
+            </li>
+            <li class="dish">
+              <span class="dish__img dish__img--alt" lang="ko">레몬</span>
+              <div class="dish__body"><h3>Lemon Mint Cooler</h3><p>Fresh lime, mint and soda.</p></div>
+            </li>
+            <li class="dish">
+              <span class="dish__img" lang="ko">커피</span>
+              <div class="dish__body"><h3>Cold Coffee</h3><p>Blended with a scoop of ice cream.</p></div>
+            </li>
+            <li class="dish">
+              <span class="dish__img dish__img--alt" lang="ko">달고나</span>
+              <div class="dish__body"><h3>Dalgona Coffee</h3><p>Whipped coffee over cold milk.</p></div>
+            </li>
+            <li class="dish">
+              <span class="dish__img" lang="ko">탄산</span>
+              <div class="dish__body"><h3>Soft Drink</h3><p>Coke, Sprite or Fanta.</p></div>
+            </li>
+            <li class="dish">
+              <span class="dish__img dish__img--alt" lang="ko">물</span>
+              <div class="dish__body"><h3>Mineral Water</h3><p>A cold one-litre bottle.</p></div>
             </li>
           </ul>
           <ul class="dishes" id="tab-desserts" role="tabpanel" aria-labelledby="t-desserts" hidden>
