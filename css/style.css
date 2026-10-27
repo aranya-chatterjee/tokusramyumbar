@@ -334,7 +334,7 @@ body { position: relative; }
 .more[aria-expanded="true"] .icon { transform: rotate(180deg); }
 .menu__lists { display: grid; align-content: start; }
 .dish {
-  display: grid; grid-template-columns: 84px 1fr auto; gap: 18px; align-items: center;
+  display: grid; grid-template-columns: 84px 1fr; gap: 18px; align-items: center;
   padding: 12px 18px 12px 12px; border-radius: 999px; background: var(--cream-2);
   transition: background-color .25s ease, color .25s ease, transform .25s ease;
   animation: dishIn .45s cubic-bezier(.2,.7,.2,1) both;
@@ -343,7 +343,6 @@ body { position: relative; }
 @keyframes dishIn { from { opacity: 0; transform: translateX(24px); } }
 .dish:hover, .dish:focus-within { background: var(--crimson); color: #fff; transform: translateX(-6px); }
 .dish:hover p, .dish:focus-within p { color: #ffe3ea; }
-.dish:hover .btn--pill, .dish:focus-within .btn--pill { background: var(--cream); color: var(--crimson-deep); }
 .dish__img {
   width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center; overflow: hidden;
   background: var(--ink); color: var(--cream); font: 400 1.25rem/1 var(--f-ko); border: 4px solid #fffaf6;
@@ -559,7 +558,6 @@ body { position: relative; }
 @media (max-width: 560px) {
   .dish { grid-template-columns: 64px 1fr; border-radius: 28px; padding: 12px; }
   .dish__img { width: 64px; height: 64px; font-size: 1rem; }
-  .dish .btn--pill { grid-column: 2; justify-self: start; }
   .notes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .visit__facts { grid-template-columns: 1fr; }
   .strip__item--wide { grid-column: auto; }

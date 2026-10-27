@@ -26,6 +26,5 @@ Then open http://localhost:8000.
 ## To replace before launch
 
 - Menu items and descriptions are placeholders
-- "Order Now" buttons open a Zomato search
 - "Get Directions" opens a Google Maps search
 - Add real opening hours, phone number and Instagram
