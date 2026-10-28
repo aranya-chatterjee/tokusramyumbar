@@ -33,6 +33,12 @@ name = "ORDER_LIMIT"
 namespace_id = "1003"
 simple = { limit = 30, period = 60 }
 
+# Notes on the rating wall: 4 a minute (each connection is also capped at 3 a day in the code)
+[[ratelimits]]
+name = "REVIEW_LIMIT"
+namespace_id = "1004"
+simple = { limit = 4, period = 60 }
+
 # Staff email alerts through Cloudflare Email Routing. Turn on Email Routing first,
 # verify the staff inbox as a destination address, then remove the # from the next two lines.
 # [[send_email]]
@@ -41,6 +47,8 @@ simple = { limit = 30, period = 60 }
 [vars]
 ALERT_FROM = "bookings@tokusramyumbar.com"
 ALERT_TO = ""
+# "1" holds new wall notes until staff approve them on the Reviews tab; "0" shows them straight away
+REVIEWS_HOLD = "0"
 
 # Secrets (set with `npx wrangler secret put NAME`, never written here):
 #   STAFF_PIN            passphrase for the /staff/ page

@@ -3,6 +3,7 @@ import { CONFIG, slotTimes, slotLabel, nowLocal, addDays } from './config.js';
 import { notifyStaff, notifyOrder } from './notify.js';
 import { json, fail, isDate, clean, newCode, readBody, overLimit } from './util.js';
 import * as orders from './orders.js';
+import * as reviews from './reviews.js';
 
 const ACTIVE = "status IN ('confirmed', 'arrived')";
 
@@ -194,6 +195,11 @@ export default {
           return res.response;
         }
         case 'GET /api/order': return await orders.orderStatus(env, url);
+        case 'GET /api/reviews': return await reviews.getWall(env);
+        case 'POST /api/reviews': {
+          if (await overLimit(env.REVIEW_LIMIT, request, 'review')) return fail('busy', 'Too many notes at once. Wait a minute and try again.', 429);
+          return await reviews.addReview(env, request);
+        }
       }
       if (url.pathname.startsWith('/api/staff/')) {
         // Every staff call counts, right PIN or wrong, so nobody can try PINs faster than this
@@ -207,6 +213,8 @@ export default {
           case 'POST /api/staff/order-status': return await orders.setOrderStatus(env, request);
           case 'POST /api/staff/sold-out': return await orders.setSoldOut(env, request);
           case 'GET /api/staff/table-links': return await orders.tableLinks(env);
+          case 'GET /api/staff/reviews': return await reviews.staffReviews(env, url);
+          case 'POST /api/staff/review-status': return await reviews.setReviewStatus(env, request);
         }
       }
       if (url.pathname.startsWith('/api/')) return fail('not_found', 'Not found.', 404);

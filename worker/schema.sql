@@ -39,3 +39,17 @@ CREATE TABLE IF NOT EXISTS order_items (
 );
 CREATE INDEX IF NOT EXISTS order_items_by_order ON order_items (order_id);
 CREATE TABLE IF NOT EXISTS sold_out (item_id TEXT PRIMARY KEY);
+
+-- Guest ratings on the note wall. Safe to run again.
+CREATE TABLE IF NOT EXISTS reviews (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  stars INTEGER NOT NULL CHECK (stars BETWEEN 1 AND 5),
+  note TEXT NOT NULL,                       -- up to 80 characters
+  name TEXT NOT NULL DEFAULT '',            -- optional, up to 24
+  status TEXT NOT NULL DEFAULT 'shown',     -- shown | pending | hidden
+  who TEXT NOT NULL,                        -- hashed connection, for the daily cap
+  day TEXT NOT NULL,                        -- YYYY-MM-DD, Gwalior time
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS reviews_by_status ON reviews (status, id);
+CREATE INDEX IF NOT EXISTS reviews_by_who ON reviews (who, day);

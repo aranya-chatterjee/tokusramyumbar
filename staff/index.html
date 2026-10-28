@@ -116,6 +116,7 @@
         <button type="button" role="tab" data-view="orders" aria-selected="true">Orders<span class="count" id="newCount"></span></button>
         <button type="button" role="tab" data-view="bookings" aria-selected="false">Bookings</button>
         <button type="button" role="tab" data-view="menu" aria-selected="false">Menu</button>
+        <button type="button" role="tab" data-view="reviews" aria-selected="false">Reviews<span class="count" id="pendingCount"></span></button>
       </nav>
       <div class="datebar">
         <button type="button" id="prev" aria-label="Previous day">&lsaquo;</button>
@@ -151,6 +152,17 @@
         <h2>Sold out today? <a href="/staff/qr.html" target="_blank" style="float:right;font-size:.85rem;font-weight:600;color:var(--crimson)">Print table QR codes</a></h2>
         <p class="msg">Tap a dish to mark it sold out. Guests can't order it until you tap it again.</p>
         <div class="menu-list" id="menuList"></div>
+      </section>
+    </main>
+
+    <main id="view-reviews" hidden>
+      <section class="card">
+        <div class="totals" id="reviewTotals"></div>
+        <div class="tables" id="reviewFilter"></div>
+        <p class="msg">Notes from the website's rating wall. Hide one to take it off the wall (it stops counting in the average), or delete it for good.</p>
+      </section>
+      <section class="card">
+        <div id="reviewList"></div>
       </section>
     </main>
 
@@ -275,7 +287,7 @@
       view = v;
       try { sessionStorage.setItem('tokusView', v); } catch {}
       document.querySelectorAll('.tabs [role="tab"]').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.view === v)));
-      ['orders', 'bookings', 'menu'].forEach((n) => { $('view-' + n).hidden = n !== v; });
+      ['orders', 'bookings', 'menu', 'reviews'].forEach((n) => { $('view-' + n).hidden = n !== v; });
       load();
     }
     document.querySelectorAll('.tabs [role="tab"]').forEach((t) => { t.onclick = () => show(t.dataset.view); });
@@ -284,6 +296,7 @@
       if (!pin) return;
       await loadOrders();
       if (view === 'bookings') await loadBookings();
+      if (view === 'reviews') await loadReviews();
     }
 
     // ---- orders ----
@@ -392,6 +405,39 @@
       const { data } = await call('/order-status', { method: 'POST', body: JSON.stringify({ id: o.id, status }) });
       if (!data.ok) alert(data.message || 'That did not save. Try again.');
       loadOrders();
+    }
+
+    // ---- rating wall ----
+    let reviewFilter = '';
+    const reviewLabels = { '': 'All', shown: 'On the wall', pending: 'Waiting', hidden: 'Hidden' };
+    async function loadReviews() {
+      const { data } = await call('/reviews' + (reviewFilter ? '?status=' + reviewFilter : ''));
+      if (!data.ok) return;
+      const by = data.byStatus || {};
+      $('pendingCount').textContent = by.pending || '';
+      $('reviewTotals').replaceChildren(
+        el('div', {}, el('b', { textContent: data.average == null ? '-' : data.average.toFixed(1) + ' ★' }), 'average on the wall'),
+        el('div', {}, el('b', { textContent: data.count }), 'notes on the wall'),
+        el('div', {}, el('b', { textContent: by.pending || 0 }), 'waiting'),
+        el('div', {}, el('b', { textContent: by.hidden || 0 }), 'hidden'));
+      $('reviewFilter').replaceChildren(...Object.entries(reviewLabels).map(([k, label]) =>
+        el('button', { type: 'button', className: reviewFilter === k ? 'on' : '', textContent: label, onclick: () => { reviewFilter = k; loadReviews(); } })));
+      $('reviewList').replaceChildren(...(data.reviews.length ? data.reviews.map((r) => {
+        const btn = (text, status, cls = '') => el('button', { type: 'button', className: cls, textContent: text, onclick: async () => {
+          if (status === 'deleted' && !confirm('Delete this note for good?')) return;
+          await call('/review-status', { method: 'POST', body: JSON.stringify({ id: r.id, status }) });
+          loadReviews();
+        } });
+        return el('div', { className: 'bk ' + (r.status === 'hidden' ? 'cancelled' : '') },
+          el('div', {},
+            el('div', { className: 'who' }, '★'.repeat(r.stars) + '☆'.repeat(5 - r.stars) + '  ' + r.note,
+              el('span', { className: 'pill ' + (r.status === 'shown' ? 'confirmed' : r.status === 'pending' ? 'no_show' : 'cancelled'), textContent: reviewLabels[r.status] })),
+            el('div', { className: 'meta', textContent: (r.name || 'No name') + ' · ' + ago(r.created_at) })),
+          el('div', { className: 'actions' },
+            ...(r.status !== 'shown' ? [btn(r.status === 'pending' ? 'Approve' : 'Show', 'shown', 'primary')] : []),
+            ...(r.status !== 'hidden' ? [btn('Hide', 'hidden')] : []),
+            btn('Delete', 'deleted')));
+      }) : [el('p', { className: 'empty', textContent: 'No notes here yet.' })]));
     }
 
     // sold-out switches

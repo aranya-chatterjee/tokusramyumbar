@@ -384,21 +384,36 @@
       <div class="wall__inner">
         <div class="wall__copy reveal">
           <h2 class="title title--light"><span class="title__plain">Leave a note</span> <span class="title__brush">on the wall</span></h2>
-          <p>Every visit ends with a sticky note. Write yours here, then bring the real one next time.</p>
+          <p>Every visit ends with a sticky note. Rate your bowl, stick a note, and everyone who visits the site sees it.</p>
           <form class="wall__form" id="noteForm" novalidate>
+            <fieldset class="rate" id="noteStars">
+              <legend>Your rating</legend>
+              <div class="rate__row">
+                <input type="radio" name="stars" id="star5" value="5"><label for="star5" title="5 stars"><span class="sr">5 stars</span></label>
+                <input type="radio" name="stars" id="star4" value="4"><label for="star4" title="4 stars"><span class="sr">4 stars</span></label>
+                <input type="radio" name="stars" id="star3" value="3"><label for="star3" title="3 stars"><span class="sr">3 stars</span></label>
+                <input type="radio" name="stars" id="star2" value="2"><label for="star2" title="2 stars"><span class="sr">2 stars</span></label>
+                <input type="radio" name="stars" id="star1" value="1"><label for="star1" title="1 star"><span class="sr">1 star</span></label>
+              </div>
+            </fieldset>
             <label for="noteText">Your note</label>
             <textarea id="noteText" autocomplete="off" name="note" maxlength="80" rows="2" placeholder="Best cheese ramen of my life…" required></textarea>
-            <p class="wall__hint" id="noteHint">Up to 80 characters. Notes stay on this device only.</p>
+            <label for="noteName">Your name <span class="wall__opt">(optional)</span></label>
+            <input id="noteName" name="name" maxlength="24" autocomplete="given-name" placeholder="Riya">
+            <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+            <p class="wall__hint" id="noteHint">Up to 80 characters. Notes go up on the wall for everyone.</p>
             <button class="btn btn--cream" type="submit">Stick It</button>
           </form>
         </div>
-        <ul class="notes" id="notes" aria-live="polite" aria-label="Notes on the wall">
-          <li class="note n1">send noods</li>
-          <li class="note n2">spice level: yes</li>
-          <li class="note n3">one more bowl?</li>
-          <li class="note n4">hi from the corner table</li>
-          <li class="note n5">your note goes here</li>
-        </ul>
+        <div class="wall__board">
+          <div class="wall__score" id="wallScore" hidden>
+            <b id="wallAvg"></b>
+            <span class="stars" id="wallStars" aria-hidden="true"></span>
+            <span id="wallCount"></span>
+          </div>
+          <p class="wall__empty" id="wallEmpty">The wall is empty. Be the first to stick a note.</p>
+          <ul class="notes" id="notes" aria-live="polite" aria-label="Notes on the wall"></ul>
+        </div>
       </div>
     </section>
 

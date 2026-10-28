@@ -284,45 +284,89 @@
     wide.addEventListener('change', place); place();
   }
 
-  // Note wall (kept in this browser only)
-  const KEY = 'tokus-notes';
+  // Note wall: star ratings and notes everyone can see, stored by the worker (/api/reviews)
   const list = document.getElementById('notes');
   const form = document.getElementById('noteForm');
   const field = document.getElementById('noteText');
   const hint = document.getElementById('noteHint');
+  const starsBox = document.getElementById('noteStars');
   const defaultHint = hint.textContent;
-  const read = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } };
-  const write = (notes) => { try { localStorage.setItem(KEY, JSON.stringify(notes.slice(-6))); } catch { /* storage blocked */ } };
-  const addNote = (text, fresh) => {
+  const starText = (n) => '★'.repeat(n) + '☆'.repeat(5 - n);
+  const say = (text, isError) => { hint.textContent = text; hint.classList.toggle('is-error', !!isError); };
+  const noteEl = (n, fresh) => {
     const li = document.createElement('li');
     li.className = 'note' + (fresh ? ' is-new' : '');
-    li.textContent = text;
-    list.prepend(li);
-    while (list.children.length > 9) list.lastElementChild.remove();
-  };
-  read().forEach((t) => addNote(t, false));
-
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const text = field.value.trim();
-    if (!text) {
-      field.setAttribute('aria-invalid', 'true');
-      hint.textContent = 'Write something first, even just "send noods".';
-      hint.classList.add('is-error');
-      field.focus();
-      return;
+    const stars = document.createElement('span');
+    stars.className = 'note__stars'; stars.textContent = starText(n.stars);
+    stars.setAttribute('aria-label', n.stars + ' out of 5');
+    const text = document.createElement('span');
+    text.className = 'note__text'; text.textContent = n.note;
+    li.append(stars, text);
+    if (n.name) {
+      const who = document.createElement('span');
+      who.className = 'note__name'; who.textContent = '- ' + n.name;
+      li.append(who);
     }
-    field.removeAttribute('aria-invalid');
-    hint.textContent = 'Stuck! See you at the real wall.';
-    hint.classList.remove('is-error');
-    addNote(text, true);
-    write([...read(), text]);
-    form.reset();
-    setTimeout(() => { hint.textContent = defaultHint; }, 3500);
+    return li;
+  };
+  const showScore = (d) => {
+    const box = document.getElementById('wallScore');
+    if (!d.count) { box.hidden = true; return; }
+    box.hidden = false;
+    document.getElementById('wallAvg').textContent = d.average.toFixed(1);
+    document.getElementById('wallStars').style.setProperty('--v', d.average);
+    document.getElementById('wallCount').textContent = `from ${d.count} ${d.count === 1 ? 'note' : 'notes'}`;
+  };
+  const loadWall = async () => {
+    try {
+      const res = await fetch('/api/reviews', { headers: { accept: 'application/json' } });
+      const d = await res.json();
+      if (!d.ok) return;
+      showScore(d);
+      list.replaceChildren(...d.notes.map((n) => noteEl(n, false)));
+      document.getElementById('wallEmpty').hidden = d.notes.length > 0;
+    } catch { /* wall offline: leave it empty */ }
+  };
+  loadWall();
+
+  let sending = false;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (sending) return;
+    const picked = form.querySelector('input[name="stars"]:checked');
+    const note = field.value.trim();
+    if (!picked) { starsBox.classList.add('is-invalid'); say('Tap the stars to rate your visit.', true); form.querySelector('#star5').focus(); return; }
+    if (!note) { field.setAttribute('aria-invalid', 'true'); say('Write something first, even just "send noods".', true); field.focus(); return; }
+    sending = true;
+    const btn = form.querySelector('button[type="submit"]');
+    btn.disabled = true; say('Sticking…');
+    const body = { stars: +picked.value, note, name: form.elements.name.value.trim(), website: form.elements.website.value };
+    try {
+      const res = await fetch('/api/reviews', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+      const d = await res.json();
+      if (!d.ok) { say(d.message || 'That did not stick. Try again in a minute.', true); return; }
+      if (d.status === 'pending') say('Thanks! Your note goes up once the team has seen it.');
+      else {
+        if (!d.repeat) {
+          document.getElementById('wallEmpty').hidden = true;
+          list.prepend(noteEl(body, true));
+          while (list.children.length > 9) list.lastElementChild.remove();
+          if (d.count) showScore(d);
+        }
+        say('Stuck! See you at the real wall.');
+      }
+      form.reset();
+      setTimeout(() => say(defaultHint), 3500);
+    } catch {
+      say('The wall is offline right now. Try again in a bit.', true);
+    } finally {
+      sending = false; btn.disabled = false;
+    }
   });
   field.addEventListener('input', () => {
-    if (field.value.trim()) { field.removeAttribute('aria-invalid'); hint.classList.remove('is-error'); hint.textContent = defaultHint; }
+    if (field.value.trim()) { field.removeAttribute('aria-invalid'); say(defaultHint); }
   });
+  starsBox.addEventListener('change', () => { starsBox.classList.remove('is-invalid'); if (hint.classList.contains('is-error')) say(defaultHint); });
 
   const replay = document.getElementById('replayIntro');
   if (replay) replay.addEventListener('click', () => { if (window.tokusIntro) { window.scrollTo(0, 0); window.tokusIntro(); } });
