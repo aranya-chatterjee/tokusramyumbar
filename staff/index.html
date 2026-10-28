@@ -300,7 +300,10 @@
     }
 
     // ---- orders ----
-    const rupees = (n) => '₹' + Number(n).toLocaleString('en-IN');
+    const rupees = (n) => { n = Math.round(Number(n) * 100) / 100; return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 }); };
+    // Bills: item total plus GST, rounded to the paisa
+    const gstOf = (sum) => Math.round(sum * (od?.gstPercent ?? 5)) / 100;
+    const withGst = (sum) => sum + gstOf(sum);
     const tableName = (t) => 'Table ' + t;
     const ago = (sqlTime) => {
       const mins = Math.max(0, Math.round((Date.now() - Date.parse(sqlTime.replace(' ', 'T') + 'Z')) / 60000));
@@ -341,7 +344,7 @@
           el('span', { className: 'od__meta', textContent: `${o.code} · ${ago(o.created_at)}${o.name ? ' · ' + o.name : ''}` })),
         el('ul', {}, ...o.items.map((i) => el('li', {}, el('b', { textContent: i.qty + '×' }), ' ' + i.name))));
       if (o.note) card.append(el('div', { className: 'od__note', textContent: o.note }));
-      card.append(el('div', { className: 'od__foot' }, el('span', { className: 'sum', textContent: rupees(o.total) }),
+      card.append(el('div', { className: 'od__foot' }, el('span', { className: 'sum', textContent: `${rupees(o.total)} + GST` }),
         el('span', { className: 'btns' },
           el('button', { type: 'button', className: 'link', textContent: 'Cancel', onclick: () => setOrder(o, 'cancelled') }),
           el('button', { type: 'button', className: 'primary', textContent: next[0], onclick: () => setOrder(o, next[1]) }))));
@@ -358,8 +361,8 @@
       $('newCount').textContent = newCount || '';
       $('orderTotals').replaceChildren(
         el('div', {}, el('b', { textContent: open.length }), 'open orders'),
-        el('div', {}, el('b', { textContent: rupees(open.reduce((s, o) => s + o.total, 0)) }), 'still to pay'),
-        el('div', {}, el('b', { textContent: rupees(paid.reduce((s, o) => s + o.total, 0)) }), 'paid today'));
+        el('div', {}, el('b', { textContent: rupees(withGst(open.reduce((s, o) => s + o.total, 0))) }), 'still to pay, with GST'),
+        el('div', {}, el('b', { textContent: rupees(withGst(paid.reduce((s, o) => s + o.total, 0))) }), 'paid today, with GST'));
 
       // one chip per table with an open bill
       const bills = new Map();
@@ -369,13 +372,14 @@
       $('tableChips').replaceChildren(
         el('button', { type: 'button', className: tableFilter ? '' : 'on', textContent: 'All tables', onclick: () => { tableFilter = ''; renderOrders(); } }),
         ...tables.map((t) => el('button', { type: 'button', className: tableFilter === t ? 'on' : '', onclick: () => { tableFilter = t; renderOrders(); } },
-          tableName(t) + ' · ', el('b', { textContent: rupees(bills.get(t)) }))));
+          tableName(t) + ' · ', el('b', { textContent: rupees(withGst(bills.get(t))) }))));
       $('bill').hidden = !tableFilter;
       if (tableFilter) {
         const mine = open.filter((o) => o.table_no === tableFilter);
         const lines = new Map();
         mine.forEach((o) => o.items.forEach((i) => lines.set(i.name, (lines.get(i.name) || 0) + i.qty)));
-        $('bill').replaceChildren(el('b', { textContent: `${tableName(tableFilter)} bill: ${rupees(bills.get(tableFilter))}` }),
+        $('bill').replaceChildren(el('b', { textContent: `${tableName(tableFilter)} bill: ${rupees(withGst(bills.get(tableFilter)))}` }),
+          el('span', { textContent: `Items ${rupees(bills.get(tableFilter))} + GST ${od.gstPercent ?? 5}% ${rupees(gstOf(bills.get(tableFilter)))}` }),
           el('span', { className: 'empty', textContent: [...lines].map(([n, q]) => `${q}× ${n}`).join(', ') }),
           el('button', { type: 'button', className: 'primary', textContent: 'Mark whole table paid', onclick: async () => {
             if (!confirm(`Mark every open order for ${tableName(tableFilter)} as paid?`)) return;
@@ -395,7 +399,7 @@
       const done = all.filter((o) => o.status === 'paid' || o.status === 'cancelled').reverse();
       $('doneList').replaceChildren(...(done.length ? done.map((o) => el('div', {},
         el('span', { textContent: `${tableName(o.table_no)} · ${o.code} · ${o.items.map((i) => i.qty + '× ' + i.name).join(', ')}` }),
-        el('span', {}, `${o.status === 'paid' ? rupees(o.total) : 'cancelled'} `, el('button', { type: 'button', className: 'link', textContent: 'Reopen', onclick: () => setOrder(o, 'served') })))) : [el('p', { className: 'empty', textContent: 'None yet.' })]));
+        el('span', {}, `${o.status === 'paid' ? rupees(withGst(o.total)) : 'cancelled'} `, el('button', { type: 'button', className: 'link', textContent: 'Reopen', onclick: () => setOrder(o, 'served') })))) : [el('p', { className: 'empty', textContent: 'None yet.' })]));
       all.forEach((o) => seenOrders.add(o.id));
       firstOrders = false;
     }

@@ -72,6 +72,8 @@
     .line .amt { font-variant-numeric: tabular-nums; min-width: 64px; text-align: right; }
     .total { display: flex; justify-content: space-between; font-weight: 600; font-size: 1.1rem; border-top: 1px solid var(--line); padding-top: 12px; }
     .total b { font-variant-numeric: tabular-nums; }
+    .sub { display: flex; justify-content: space-between; color: var(--ink-soft); font-size: .95rem; font-variant-numeric: tabular-nums; }
+    .ticket .sub { font-size: .9rem; }
     label.f { display: grid; gap: 6px; font-size: .88rem; font-weight: 600; color: var(--ink-soft); }
     label.f input, label.f select { padding: 12px 14px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; }
     .send { padding: 16px; border: 0; border-radius: 16px; background: var(--crimson); color: #fff; font-weight: 600; font-size: 1.05rem; }
@@ -104,7 +106,7 @@
   </header>
 
   <main>
-    <p class="hello" id="hello">Pick your dishes and send the order. We bring it to your table, and you pay at the counter when you're done.</p>
+    <p class="hello" id="hello">Pick your dishes and send the order. We bring it to your table, and you pay at the counter when you're done. Menu prices are before 5% GST, which is added to the bill.</p>
     <section class="mine" id="mine" aria-label="Your orders" hidden></section>
     <div id="menu"><p class="msg">Loading the menu...</p></div>
   </main>
@@ -115,6 +117,8 @@
     <form class="sheet__card" id="cartForm" novalidate>
       <div class="sheet__head"><h2 id="sheetTitle">Your order</h2><button class="x" type="button" id="closeCart" aria-label="Close">✕</button></div>
       <div class="lines" id="lines"></div>
+      <div class="sub"><span>Items</span><span id="sheetSub"></span></div>
+      <div class="sub"><span class="gst-label">GST (5%)</span><span id="sheetGst"></span></div>
       <div class="total"><span>Total</span><b id="sheetTotal"></b></div>
       <label class="f">Your name (optional)<input id="name" maxlength="40" autocomplete="given-name" placeholder="So we know who it's for"></label>
       <label class="f">Anything for the kitchen? (optional)<input id="note" maxlength="200" placeholder="Less spicy, no onion, extra egg..."></label>
@@ -128,7 +132,9 @@
   (() => {
     const API = '/api';
     const $ = (id) => document.getElementById(id);
-    const rupees = (n) => '₹' + n.toLocaleString('en-IN');
+    const rupees = (n) => { n = Math.round(Number(n) * 100) / 100; return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 }); };
+    // GST goes on top of the item total, rounded to the paisa
+    const gstOf = (sum, pct = menu.gstPercent ?? 5) => Math.round(sum * pct) / 100;
     const cart = new Map();
     let menu = { items: [], categories: [], tables: 12 }, byId = {};
     const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
@@ -193,8 +199,12 @@
       const { count, sum } = totals();
       $('bar').hidden = !count;
       $('barCount').textContent = `${count} ${count === 1 ? 'item' : 'items'} · View order`;
-      $('barTotal').textContent = rupees(sum);
-      $('sheetTotal').textContent = rupees(sum);
+      const gst = gstOf(sum);
+      $('barTotal').textContent = rupees(sum + gst);
+      $('sheetSub').textContent = rupees(sum);
+      $('sheetGst').textContent = rupees(gst);
+      $('sheetTotal').textContent = rupees(sum + gst);
+      document.querySelectorAll('.gst-label').forEach((l) => { l.textContent = `GST (${menu.gstPercent ?? 5}%)`; });
       $('lines').replaceChildren(...[...cart].map(([id, n]) => {
         const m = byId[id];
         const step = el('span', { className: 'step' },
@@ -258,7 +268,9 @@
             el('div', { className: 'ticket__head' }, el('b', { textContent: `Order ${d.code}` }), el('span', { className: 'pill', textContent: label })),
             el('div', { className: 'track' }, ...STEPS.map(([, name], i) => el('span', { className: i <= rank ? 'done' : '', textContent: name }))),
             el('ul', {}, ...d.items.map((i) => el('li', { textContent: `${i.qty} × ${i.name}` }))),
-            el('div', { className: 'total' }, el('span', { textContent: 'Total' }), el('b', { textContent: rupees(d.total) })));
+            el('div', { className: 'sub' }, el('span', { textContent: 'Items' }), el('span', { textContent: rupees(d.total) })),
+            el('div', { className: 'sub' }, el('span', { textContent: `GST (${d.gstPercent ?? 5}%)` }), el('span', { textContent: rupees(gstOf(d.total, d.gstPercent)) })),
+            el('div', { className: 'total' }, el('span', { textContent: 'Total' }), el('b', { textContent: rupees(d.total + gstOf(d.total, d.gstPercent)) })));
         } catch { return null; }
       }));
       $('mine').replaceChildren(el('h2', { className: 'msg', textContent: 'Your orders today' }), ...cards.filter(Boolean));

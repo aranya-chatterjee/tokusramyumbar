@@ -111,7 +111,7 @@
     d.addEventListener('pointerenter', () => feature(d));
     d.addEventListener('focusin', () => feature(d));
   });
-  current = document.querySelector('#tab-ramen .dish');
+  current = document.querySelector('.dishes .dish');
 
   // Book a seat: books live through the API (data-api); falls back to a prefilled WhatsApp message (data-whatsapp) when the API can't be reached or the group is too big
   const bookForm = document.getElementById('bookForm');

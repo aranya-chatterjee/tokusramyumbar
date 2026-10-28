@@ -42,6 +42,7 @@ export async function getMenu(env) {
   return json({
     ok: true,
     tables: CONFIG.tables,
+    gstPercent: CONFIG.gstPercent,
     categories: CATEGORIES,
     items: MENU.map((m) => ({ ...m, soldOut: off.has(m.id) })),
   });
@@ -132,7 +133,7 @@ export async function orderStatus(env, url) {
   const o = await env.DB.prepare('SELECT id, code, table_no, status, total, created_at FROM orders WHERE code = ?').bind(code).first();
   if (!o) return fail('missing', 'No order with that code.', 404);
   const items = (await itemsFor(env, [o.id]))[o.id] || [];
-  return json({ ok: true, code: o.code, table: o.table_no, status: o.status, total: o.total, items });
+  return json({ ok: true, code: o.code, table: o.table_no, status: o.status, total: o.total, gstPercent: CONFIG.gstPercent, items });
 }
 
 export async function staffOrders(env, url) {
@@ -150,6 +151,7 @@ export async function staffOrders(env, url) {
     menu: MENU.map((m) => ({ id: m.id, cat: m.cat, name: m.name, price: m.price, soldOut: off.has(m.id) })),
     categories: CATEGORIES,
     tables: tableNames(),
+    gstPercent: CONFIG.gstPercent,
   });
 }
 

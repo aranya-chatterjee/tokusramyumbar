@@ -14,6 +14,7 @@ export const CONFIG = {
   tables: 12,              // tables numbered 1 to this; each gets a QR code to /order/?table=N
   maxPerItem: 20,          // most of one dish in a single order
   maxItemsPerOrder: 40,    // most dishes in a single order
+  gstPercent: 5,           // added on top of the bill total (menu prices are before GST)
 };
 
 export const TZ_OFFSET_MIN = 330; // India Standard Time, UTC+5:30, no DST
