@@ -235,7 +235,7 @@
         const res = await fetch(`${api}/book`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ name: f.name.value, phone: f.phone.value, date: f.date.value, time: time.value, guests: guestsEl.value, note: f.note.value, website: f.website.value }),
+          body: JSON.stringify({ name: f.name.value, phone: f.phone.value, date: f.date.value, time: time.value, guests: guestsEl.value, note: f.note.value, website: f.toku_trap.value }),
         });
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.ok) { showDone(summary, data.code); return; }
@@ -340,7 +340,7 @@
     sending = true;
     const btn = form.querySelector('button[type="submit"]');
     btn.disabled = true; say('Sticking…');
-    const body = { stars: +picked.value, note, name: form.elements.name.value.trim(), website: form.elements.website.value };
+    const body = { stars: +picked.value, note, name: form.elements.name.value.trim(), website: form.elements.toku_trap.value };
     try {
       const res = await fetch('/api/reviews', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
       const d = await res.json();

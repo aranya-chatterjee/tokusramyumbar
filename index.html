@@ -355,7 +355,7 @@
             <p class="book__slots-empty">Pick a date to see open times.</p>
           </fieldset>
           <label class="book__note">Anything we should know? <span>(optional)</span><input name="note" type="text" maxlength="200" placeholder="Birthday, high chair, allergies..."></label>
-          <label class="book__trap" aria-hidden="true">Leave this empty<input name="website" type="text" tabindex="-1" autocomplete="off"></label>
+          <label class="book__trap" aria-hidden="true">Leave this empty<input name="toku_trap" type="text" tabindex="-1" autocomplete="off" data-lpignore="true" data-1p-ignore></label>
           <p class="book__hint" id="bookHint" role="status" aria-live="polite">Pick a date and time. Your table is confirmed straight away.</p>
           <button class="btn btn--cream" type="submit" id="bookSubmit">Book your seat <svg class="icon"><use href="#i-arrow"/></svg></button>
         </form>
@@ -403,7 +403,7 @@
             <textarea id="noteText" autocomplete="off" name="note" maxlength="80" rows="2" placeholder="Best cheese ramen of my life…" required></textarea>
             <label for="noteName">Your name <span class="wall__opt">(optional)</span></label>
             <input id="noteName" name="name" maxlength="24" autocomplete="given-name" placeholder="Riya">
-            <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+            <input class="hp" type="text" name="toku_trap" tabindex="-1" autocomplete="off" aria-hidden="true" data-lpignore="true" data-1p-ignore>
             <p class="wall__hint" id="noteHint">Up to 80 characters. Notes go up on the wall for everyone.</p>
             <button class="btn btn--cream" type="submit">Stick It</button>
           </form>

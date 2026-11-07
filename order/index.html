@@ -122,7 +122,7 @@
       <div class="total"><span>Total</span><b id="sheetTotal"></b></div>
       <label class="f">Your name (optional)<input id="name" maxlength="40" autocomplete="given-name" placeholder="So we know who it's for"></label>
       <label class="f">Anything for the kitchen? (optional)<input id="note" maxlength="200" placeholder="Less spicy, no onion, extra egg..."></label>
-      <input class="trap" id="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <input class="trap" id="tokuTrap" tabindex="-1" autocomplete="off" aria-hidden="true" data-lpignore="true" data-1p-ignore>
       <p class="msg" id="sendMsg" role="status" aria-live="polite">Pay at the counter when you're done.</p>
       <button class="send" type="submit" id="send">Send order to the kitchen</button>
     </form>
@@ -230,7 +230,7 @@
       $('send').disabled = true; msg.className = 'msg'; msg.textContent = 'Sending...';
       try {
         const res = await fetch(API + '/order', { method: 'POST', headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ table, key, name: $('name').value, note: $('note').value, website: $('website').value, items: [...cart].map(([id, qty]) => ({ id, qty })) }) });
+          body: JSON.stringify({ table, key, name: $('name').value, note: $('note').value, website: $('tokuTrap').value, items: [...cart].map(([id, qty]) => ({ id, qty })) }) });
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.ok) {
           const mine = store.get('tokusOrders', []).filter((o) => o.day === today());

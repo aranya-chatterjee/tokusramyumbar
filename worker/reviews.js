@@ -33,7 +33,6 @@ export async function getWall(env) {
 export async function addReview(env, request) {
   const body = await readBody(request);
   if (!body) return fail('bad_request', 'Send the note as JSON.');
-  if (body.website) return json({ ok: true, status: 'shown' }); // honeypot field filled in: a bot
   const stars = parseInt(body.stars, 10);
   const note = clean(body.note, 80);
   const name = clean(body.name, 24);
@@ -41,7 +40,10 @@ export async function addReview(env, request) {
   if (!note) return fail('note', 'Write something first, even just "send noods".');
   if (/https?:|www\.|\.(com|in|net|org|xyz|io)\b|@\w/i.test(note + ' ' + name)) return fail('note', 'Links and handles can\'t go on the wall.');
 
-  const status = env.REVIEWS_HOLD === '1' ? 'pending' : 'shown';
+  // Hidden spam-trap field filled in: probably a bot, but browser autofill can do it too, so the note is
+  // kept under Hidden on the staff page (one tap to show it) instead of being thrown away
+  const trapped = !!body.website;
+  const status = trapped ? 'hidden' : env.REVIEWS_HOLD === '1' ? 'pending' : 'shown';
   const who = await visitorKey(request);
   const day = nowLocal().date;
   // One statement, so a fast double tap or a script can't slip past the daily cap or post the same note twice
@@ -53,10 +55,10 @@ export async function addReview(env, request) {
   ).bind(stars, note, name, status, who, day, PER_DAY).run();
   if (res.meta.changes !== 1) {
     const same = await env.DB.prepare('SELECT 1 FROM reviews WHERE who = ? AND note = ?').bind(who, note).first();
-    if (same) return json({ ok: true, status, repeat: true });
+    if (same) return json({ ok: true, status: trapped ? 'shown' : status, repeat: true });
     return fail('limit', `That's ${PER_DAY} notes today. Come back tomorrow, or stick a real one at the wall.`, 429);
   }
-  return json({ ok: true, status, ...(await summary(env)) }, 201);
+  return json({ ok: true, status: trapped ? 'shown' : status, ...(await summary(env)) }, 201);
 }
 
 // ---- staff ----

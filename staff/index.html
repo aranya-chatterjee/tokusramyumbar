@@ -415,8 +415,10 @@
     let reviewFilter = '';
     const reviewLabels = { '': 'All', shown: 'On the wall', pending: 'Waiting', hidden: 'Hidden' };
     async function loadReviews() {
-      const { data } = await call('/reviews' + (reviewFilter ? '?status=' + reviewFilter : ''));
-      if (!data.ok) return;
+      let data;
+      try { ({ data } = await call('/reviews' + (reviewFilter ? '?status=' + reviewFilter : ''))); }
+      catch (e) { if (e.message !== 'pin') $('reviewList').replaceChildren(el('p', { className: 'empty', textContent: 'Offline, could not load notes.' })); return; }
+      if (!data.ok) { $('reviewList').replaceChildren(el('p', { className: 'empty', textContent: data.message || 'Could not load notes.' })); return; }
       const by = data.byStatus || {};
       $('pendingCount').textContent = by.pending || '';
       $('reviewTotals').replaceChildren(
