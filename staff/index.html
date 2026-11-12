@@ -23,6 +23,9 @@
     .datebar { display: flex; gap: 6px; align-items: center; }
     .datebar button { background: transparent; color: var(--cream); border-color: rgba(255,255,255,.3); }
     .datebar input { background: transparent; color: var(--cream); border-color: rgba(255,255,255,.3); color-scheme: dark; }
+    input[type="date"] { -webkit-appearance: none; appearance: none; min-height: calc(1.2em + 20px); text-align: left; }
+    input[type="date"]::-webkit-date-and-time-value { text-align: left; min-height: 1.2em; margin: 0; }
+    .datebar input[type="date"] { flex: 1 1 auto; max-width: 11rem; }
     .card { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
     .card h2 { margin: 0 0 12px; font-size: 1rem; }
     .totals { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-bottom: 14px; color: var(--muted); }
