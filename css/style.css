@@ -126,9 +126,14 @@ body.nav-open .brand { visibility: hidden; }
 .book__copy > p:last-child { color: #f3e2e5; max-width: 38ch; }
 .book__form { display: grid; gap: 14px; }
 .book__row { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 14px; }
-.book__form label { display: grid; gap: 6px; font: 600 .85rem/1 var(--f-body); color: var(--blush); }
+.book__form label { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; font: 600 .85rem/1 var(--f-body); color: var(--blush); }
 .book__form input, .book__form select { font: 500 1rem/1.2 var(--f-body); color: var(--ink); background: #fffaf6; border: 2px solid transparent; border-radius: 14px; padding: 13px 14px; width: 100%; min-width: 0; }
 .book__form input:focus, .book__form select:focus { outline: none; border-color: var(--crimson); }
+/* iOS Safari draws date inputs with their own native size (wider and taller than text inputs) and ignores width:100% until appearance is reset. */
+.book__form label > * { min-width: 0; max-width: 100%; }
+.book__form input[type="date"] { -webkit-appearance: none; appearance: none; display: block; max-width: 100%; height: calc(1.2em + 30px); min-height: calc(1.2em + 30px); text-align: left; }
+.book__form input[type="date"]::-webkit-date-and-time-value { text-align: left; min-height: 1.2em; margin: 0; }
+.book__form input[type="date"]::-webkit-datetime-edit { padding: 0; }
 .book__form [aria-invalid="true"] { border-color: #ffd34d; }
 .book__hint { font-size: .85rem; color: #f3e2e5; }
 .book__hint.is-error { color: #ffe27a; font-weight: 600; }
